@@ -31,12 +31,10 @@ imgs_dir = Path('acds/benchmarks/raw')            # folder with data
 
 # Create an object of the reservoir
 n_inp = 1
-#n_hid = 256
-n_hid = 800
+n_hid = 256 # default 256
 dt = 0.042
 gamma = (2.7 - 2.7 / 2.0, 2.7 + 2.7 / 2.0)
 epsilon = (4.7 - 4.7 / 2.0, 4.7 + 4.7 / 2.0)
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 model = RandomizedOscillatorsNetwork(
     n_inp=n_inp,
@@ -54,13 +52,13 @@ model = RandomizedOscillatorsNetwork(
 ).to(device)
 
 # Load and assign saved parameters to the reservoir
-model_params = torch.load(model_dir/"sMNIST_RON_full_800hidden_model_0.pt", map_location=device)
+model_params = torch.load(model_dir/"sMNIST_RON_full_default/sMNIST_RON_full_default_model_0.pt", map_location=device)
 model.load_state_dict(model_params)
 model.eval()
 
 # Load saved scaler and classifier
-scaler = joblib.load(model_dir/"sMNIST_RON_full_800hidden_scaler_0.pkl")
-classifier = joblib.load(model_dir/"sMNIST_RON_full_800hidden_classifier_0.pkl")
+scaler = joblib.load(model_dir/"sMNIST_RON_full_default/sMNIST_RON_full_default_scaler_0.pkl")
+classifier = joblib.load(model_dir/"sMNIST_RON_full_default/sMNIST_RON_full_default_classifier_0.pkl")
 
 
 # =========================================================
@@ -75,7 +73,7 @@ classifier = joblib.load(model_dir/"sMNIST_RON_full_800hidden_classifier_0.pkl")
 #     transform=transform, 
 #     download=False
 # )                                      # load test dataset
-# image_mnist, _ = mnist_test_dataset[90] # extract first image (1,28,28), grayscale, torch tensor, float32 values in [0,1]
+# image_mnist, _ = mnist_test_dataset[0] # extract first image (1,28,28), grayscale, torch tensor, float32 values in [0,1]
 # image_tensor = image_mnist.to(device)  # (1,28,28), grayscale, torch tensor, on proper device, float32 values in [0,1]
 # image_test = image_tensor.view(1,-1,1) # resize to (1, 784, 1), as required by forward method of the model
 
@@ -86,7 +84,7 @@ transform = transforms.Compose([
     transforms.ToTensor(),             # convert to torch tensor float32 in [0, 1]
     transforms.Lambda(lambda x: 1 - x) # invert to have white digit on black background
 ])
-image_path = imgs_dir/'test_MNIST_6.png'
+image_path = imgs_dir/'test_MNIST_2.png'
 image = Image.open(image_path)
 image_tensor = transform(image).to(device) # (1,28,28), grayscale, torch tensor, on proper device, float32 values in [0,1]
 image_test = image_tensor.view(1,-1,1)     # resize to (1, 784, 1), as required by forward method of the model
@@ -105,8 +103,14 @@ pred = classifier.predict(activations)[0]
 # Show prediction
 probs = classifier.predict_proba(activations).squeeze()
 
-plt.figure()
-plt.imshow(image_tensor.cpu().squeeze(), cmap='gray')
-plt.title(f'Prediction: {pred}')
-plt.figtext(0.5, 0.03, f'Classes probabilities: {np.round(100*probs, 1)} %', ha='center', va='center')
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+ax1.imshow(image_tensor.cpu().squeeze(), cmap='gray')
+ax1.set_title('Input')
+
+ax2.bar(np.arange(10), probs, color='skyblue')
+ax2.set_title(f'Prediction: {pred}')
+ax2.set_xlabel('classes')
+ax2.set_ylabel('probability')
+ax2.set_xticks(np.arange(10)) 
+
 plt.show()

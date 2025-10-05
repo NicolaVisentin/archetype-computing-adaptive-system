@@ -153,6 +153,21 @@ epsilon = (args.epsilon - args.epsilon_range / 2.0,
 # Run the experiment the desired number of times
 # =========================================================
 
+# Create folder for saving the trained networks
+if args.ron:
+    netw = 'RON'
+elif args.pron:
+    netw = 'PRON'
+elif args.mspron:
+    netw = 'MSPRON'
+elif args.esn:
+    netw = 'ESN'
+else:
+    raise ValueError("Wrong model choice.")
+save_dir = os.path.join(args.resultroot, f'trained_architectures/sMNIST_{netw}_{args.topology}_{args.resultsuffix}')
+os.makedirs(save_dir, exist_ok=True)  # create folder if not there already
+
+# Iterations
 train_accs, valid_accs, test_accs = [], [], []
 for i in tqdm(range(args.trials), 'Trials', leave=False):
     # Initialize the model
@@ -210,7 +225,8 @@ for i in tqdm(range(args.trials), 'Trials', leave=False):
     train_loader, valid_loader, test_loader = get_mnist_data(
         root=args.dataroot, 
         bs_train=args.batch, 
-        bs_test=args.batch
+        bs_test=args.batch,
+        #valid_perc=0
     )
 
     # Train the output layer (classifier) (1): pass all the inputs in the train set to the model
@@ -245,28 +261,14 @@ for i in tqdm(range(args.trials), 'Trials', leave=False):
     valid_accs.append(valid_acc)
     test_accs.append(test_acc)
 
+    # Save the trained network
     print('\nSaving trained network...')
-    save_dir = os.path.join(args.resultroot, 'trained_architectures')
-    os.makedirs(save_dir, exist_ok=True)  # create folder if not there already
-    if args.ron:
-        netw = 'RON'
-    elif args.pron:
-        netw = 'PRON'
-    elif args.mspron:
-        netw = 'MSPRON'
-    elif args.esn:
-        netw = 'ESN'
-    else:
-        raise ValueError("Wrong model choice.")
-
     model_path = os.path.join(save_dir, f"sMNIST_{netw}_{args.topology}_{args.resultsuffix}_model_{i}.pt")
-    torch.save(model.state_dict(), model_path)
-
+    torch.save(model.state_dict(), model_path) # save reservoir
     scaler_path = os.path.join(save_dir, f"sMNIST_{netw}_{args.topology}_{args.resultsuffix}_scaler_{i}.pkl")
-    joblib.dump(scaler, scaler_path)
-
+    joblib.dump(scaler, scaler_path) # save scaler
     classifier_path = os.path.join(save_dir, f"sMNIST_{netw}_{args.topology}_{args.resultsuffix}_classifier_{i}.pkl")
-    joblib.dump(classifier, classifier_path)
+    joblib.dump(classifier, classifier_path) # save classifier
     print()
 
 # Save results
