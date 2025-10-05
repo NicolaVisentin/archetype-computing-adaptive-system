@@ -51,20 +51,20 @@ parser.add_argument("--trials", type=int, default=1, help="How many times to run
 # PARAMETERS FOR ALL RONs MODELS:
 #   temporal discretization step (dt)
 parser.add_argument("--dt", type=float, default=0.042, help="step size <dt> of the coRNN")
-#   damping (gamma)
+#   stiffness (gamma)
 parser.add_argument("--gamma", type=float, default=2.7, help="y controle parameter <gamma> of the coRNN")
 parser.add_argument("--gamma_range", type=float, default=2.7, help="y controle parameter <gamma> of the coRNN")
-#   stiffness (epsilon)
+#   damping (epsilon)
 parser.add_argument("--epsilon", type=float, default=4.7, help="z controle parameter <epsilon> of the coRNN")
 parser.add_argument("--epsilon_range", type=float, default=4.7, help="z controle parameter <epsilon> of the coRNN")
 
 # PARAMETERS FOR ESN MODEL:
-#   spectral radius (max abs eigenvalue of the recurrent matrix)
-parser.add_argument("--rho", type=float, default=0.99, help="ESN spectral radius")
 #   leaky factor
 parser.add_argument("--leaky", type=float, default=1.0)
 
 # OTHER SPECIFIC PARAMETERS
+#   spectral radius (max abs eigenvalue of the recurrent matrix). For ESN and pure RON
+parser.add_argument("--rho", type=float, default=0.99, help="ESN spectral radius")
 #   diffusive term (to ensure stability of the forward Euler method). For pure RON
 parser.add_argument("--diffusive_gamma", type=float, default=0.0, help="diffusive term")
 #   topology of the reservoir (and scaling factor for ring/band/toeplitz cases). For pure RON
@@ -156,7 +156,7 @@ epsilon = (args.epsilon - args.epsilon_range / 2.0,
 train_accs, valid_accs, test_accs = [], [], []
 for i in tqdm(range(args.trials), 'Trials', leave=False):
     # Initialize the model
-    print('Initializing the model...')
+    print('\nInitializing the model...')
     if args.esn:
         model = DeepReservoir(
             input_size=n_inp,
@@ -204,19 +204,17 @@ for i in tqdm(range(args.trials), 'Trials', leave=False):
         ).to(device)
     else:
         raise ValueError("Wrong model choice.")
-    print('Model initialized!')
 
     # Build dataloaders for MNIST task
-    print('Building datasets...')
+    print('\nBuilding datasets...')
     train_loader, valid_loader, test_loader = get_mnist_data(
         root=args.dataroot, 
         bs_train=args.batch, 
         bs_test=args.batch
     )
-    print('Datasets built!')
 
     # Train the output layer (classifier) (1): pass all the inputs in the train set to the model
-    print('Generating previsions for training...')
+    print('\nGenerating previsions for training...')
     activations, ys = [], []
     for images, labels in tqdm(train_loader, 'Model forward', leave=False):
         images = images.to(device)
@@ -231,26 +229,23 @@ for i in tqdm(range(args.trials), 'Trials', leave=False):
         
     activations = torch.cat(activations, dim=0).numpy() # shape (num_train_images, num_hidden_units)
     ys = torch.cat(ys, dim=0).squeeze().numpy()         # shape (num_train_images,)
-    print('Previsions generated!')
 
     # Train the output layer (classifier) (2): logistic regression of the output layer
-    print('Training the classifier (regression)...')
+    print('\nTraining the classifier (regression)...')
     scaler = preprocessing.StandardScaler().fit(activations)
     activations = scaler.transform(activations)
     classifier = LogisticRegression(max_iter=1000).fit(activations, ys)
-    print('Training finished!')
 
     # Evaluate the performances of the trained classifier
-    print('Evaluating perfomances...')
+    print('\nEvaluating perfomances...')
     train_acc = test(train_loader, classifier, scaler)                               # on the training set
     valid_acc = test(valid_loader, classifier, scaler) if not args.use_test else 0.0 # on the validation set
     test_acc = test(test_loader, classifier, scaler) if args.use_test else 0.0       # on the testing set
     train_accs.append(train_acc)
     valid_accs.append(valid_acc)
     test_accs.append(test_acc)
-    print('Testing finished!')
 
-    print('Saving trained network...')
+    print('\nSaving trained network...')
     save_dir = os.path.join(args.resultroot, 'trained_architectures')
     os.makedirs(save_dir, exist_ok=True)  # create folder if not there already
     if args.ron:
@@ -264,26 +259,26 @@ for i in tqdm(range(args.trials), 'Trials', leave=False):
     else:
         raise ValueError("Wrong model choice.")
 
-    model_path = os.path.join(save_dir, f"sMNIST_{netw}_{args.topology}{args.resultsuffix}_model_{i}.pt")
+    model_path = os.path.join(save_dir, f"sMNIST_{netw}_{args.topology}_{args.resultsuffix}_model_{i}.pt")
     torch.save(model.state_dict(), model_path)
 
-    scaler_path = os.path.join(save_dir, f"sMNIST_{netw}_{args.topology}{args.resultsuffix}_scaler_{i}.pkl")
+    scaler_path = os.path.join(save_dir, f"sMNIST_{netw}_{args.topology}_{args.resultsuffix}_scaler_{i}.pkl")
     joblib.dump(scaler, scaler_path)
 
-    classifier_path = os.path.join(save_dir, f"sMNIST_{netw}_{args.topology}{args.resultsuffix}_classifier_{i}.pkl")
+    classifier_path = os.path.join(save_dir, f"sMNIST_{netw}_{args.topology}_{args.resultsuffix}_classifier_{i}.pkl")
     joblib.dump(classifier, classifier_path)
-    print('Network saved!')
+    print()
 
 # Save results
-print('Saving results...')
+print('\nSaving results...')
 if args.ron:
-    f = open(os.path.join(args.resultroot, f"sMNIST_log_RON_{args.topology}{args.resultsuffix}.txt"), "a")
+    f = open(os.path.join(args.resultroot, f"sMNIST_log_RON_{args.topology}_{args.resultsuffix}.txt"), "a")
 elif args.pron:
-    f = open(os.path.join(args.resultroot, f"sMNIST_log_PRON{args.resultsuffix}.txt"), "a")
+    f = open(os.path.join(args.resultroot, f"sMNIST_log_PRON_{args.resultsuffix}.txt"), "a")
 elif args.mspron:
-    f = open(os.path.join(args.resultroot, f"sMNIST_log_MSPRON{args.resultsuffix}.txt"), "a")
+    f = open(os.path.join(args.resultroot, f"sMNIST_log_MSPRON_{args.resultsuffix}.txt"), "a")
 elif args.esn:
-    f = open(os.path.join(args.resultroot, f"sMNIST_log_ESN{args.resultsuffix}.txt"), "a")
+    f = open(os.path.join(args.resultroot, f"sMNIST_log_ESN_{args.resultsuffix}.txt"), "a")
 else:
     raise ValueError("Wrong model choice.")
 
@@ -300,4 +295,4 @@ ar += (
 )
 f.write(ar + "\n")
 f.close()
-print('Done!')
+print('\nDone!')
