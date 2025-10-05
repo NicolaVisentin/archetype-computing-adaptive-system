@@ -7,6 +7,7 @@ from sklearn import preprocessing
 from sklearn.linear_model import LogisticRegression
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import joblib
 
 from acds.archetypes import (
     DeepReservoir,
@@ -67,7 +68,11 @@ parser.add_argument("--leaky", type=float, default=1.0)
 #   diffusive term (to ensure stability of the forward Euler method). For pure RON
 parser.add_argument("--diffusive_gamma", type=float, default=0.0, help="diffusive term")
 #   topology of the reservoir (and scaling factor for ring/band/toeplitz cases). For pure RON
-parser.add_argument("--topology", type=str, default="full", choices=["full", "ring", "band", "lower", "toeplitz", "orthogonal", "antisymmetric"], help="Topology of the reservoir")
+parser.add_argument("--topology", 
+                    type=str, 
+                    default="full", 
+                    choices=["full", "ring", "band", "lower", "toeplitz", "orthogonal", "antisymmetric"], 
+                    help="Topology of the reservoir")
 parser.add_argument("--reservoir_scaler", type=float, default=1.0, help="Scaler in case of ring/band/toeplitz reservoir")
 #   sparsity of the connections in the reservoir (0: fully connected; 1: everything unconnected). For ESN and pure RON
 parser.add_argument("--sparsity", type=float, default=0.0, help="Sparsity of the reservoir")
@@ -105,7 +110,7 @@ assert 1.0 > args.sparsity >= 0.0, "Sparsity in [0, 1)"
 # plt.show()
 # exit()
 
-# Function to test the trained model
+# Function to test the trained classifier
 @torch.no_grad()
 def test(data_loader, classifier, scaler):
     activations, ys = [], []
@@ -113,14 +118,18 @@ def test(data_loader, classifier, scaler):
     for images, labels in tqdm(data_loader, f'Testing the model', leave=False):
         images = images.to(device)
         images = images.view(images.shape[0], -1) # (batch_size, 1, 28, 28) --> (batch_size, 784)
-        images = images.unsqueeze(-1)             # (batch_size, 784) --> (batch_size, 784, 1)
-        output = model(images)[-1][0]
+        images = images.unsqueeze(-1)             # (batch_size, 784) --> (batch_size, 784, 1) as the forward 
+                                                  # method of the model expects (batch_size, num_timesteps, input_dim)
+        output = model(images) # forward method gives a tuple with 2 elements...
+        output = output[-1]    # ...we only want the last one, which is a list...
+        output = output[0]     # ...form which we extract the first element: a tensor (batch_size, n_hidden). Each row (associated
+                               # with one element of the batch) contains the last hidden states for all the hidden units
         activations.append(output.cpu())
         ys.append(labels)
 
-    activations = torch.cat(activations, dim=0).numpy()
-    activations = scaler.transform(activations)
-    ys = torch.cat(ys, dim=0).numpy()
+    activations = torch.cat(activations, dim=0).numpy() # shape (num_train_images, num_hidden_units)
+    activations = scaler.transform(activations)        
+    ys = torch.cat(ys, dim=0).numpy()                   # shape (num_train_images,)
 
     return classifier.score(activations, ys)
 
@@ -212,13 +221,16 @@ for i in tqdm(range(args.trials), 'Trials', leave=False):
     for images, labels in tqdm(train_loader, 'Model forward', leave=False):
         images = images.to(device)
         images = images.view(images.shape[0], -1) # (batch_size, 1, 28, 28) --> (batch_size, 784)
-        images = images.unsqueeze(-1)             # (batch_size, 784) --> (batch_size, 784, 1)
-        output = model(images)[-1][0]
+        images = images.unsqueeze(-1)             # (batch_size, 784) --> (batch_size, 784, 1) as the forward method of the model expects (batch_size, num_timesteps, input_dim)
+        output = model(images) # forward method gives a tuple with 2 elements...
+        output = output[-1]    # ...we only want the last one, which is a list...
+        output = output[0]     # ...form which we extract the first element: a tensor (batch_size, n_hidden). Each row (associated
+                               # with one element of the batch) contains the last hidden states for all the hidden units
         activations.append(output.cpu())
         ys.append(labels)
         
-    activations = torch.cat(activations, dim=0).numpy()
-    ys = torch.cat(ys, dim=0).squeeze().numpy()
+    activations = torch.cat(activations, dim=0).numpy() # shape (num_train_images, num_hidden_units)
+    ys = torch.cat(ys, dim=0).squeeze().numpy()         # shape (num_train_images,)
     print('Previsions generated!')
 
     # Train the output layer (classifier) (2): logistic regression of the output layer
@@ -237,6 +249,30 @@ for i in tqdm(range(args.trials), 'Trials', leave=False):
     valid_accs.append(valid_acc)
     test_accs.append(test_acc)
     print('Testing finished!')
+
+    print('Saving trained network...')
+    save_dir = os.path.join(args.resultroot, 'trained_architectures')
+    os.makedirs(save_dir, exist_ok=True)  # create folder if not there already
+    if args.ron:
+        netw = 'RON'
+    elif args.pron:
+        netw = 'PRON'
+    elif args.mspron:
+        netw = 'MSPRON'
+    elif args.esn:
+        netw = 'ESN'
+    else:
+        raise ValueError("Wrong model choice.")
+
+    model_path = os.path.join(save_dir, f"sMNIST_{netw}_{args.topology}{args.resultsuffix}_model_{i}.pt")
+    torch.save(model.state_dict(), model_path)
+
+    scaler_path = os.path.join(save_dir, f"sMNIST_{netw}_{args.topology}{args.resultsuffix}_scaler_{i}.pkl")
+    joblib.dump(scaler, scaler_path)
+
+    classifier_path = os.path.join(save_dir, f"sMNIST_{netw}_{args.topology}{args.resultsuffix}_classifier_{i}.pkl")
+    joblib.dump(classifier, classifier_path)
+    print('Network saved!')
 
 # Save results
 print('Saving results...')
