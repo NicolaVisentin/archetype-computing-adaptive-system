@@ -84,7 +84,7 @@ transform = transforms.Compose([
     transforms.ToTensor(),             # convert to torch tensor float32 in [0, 1]
     transforms.Lambda(lambda x: 1 - x) # invert to have white digit on black background
 ])
-image_path = imgs_dir/'test_MNIST_2.png'
+image_path = imgs_dir/'test_MNIST_0.png'
 image = Image.open(image_path)
 image_tensor = transform(image).to(device) # (1,28,28), grayscale, torch tensor, on proper device, float32 values in [0,1]
 image_test = image_tensor.view(1,-1,1)     # resize to (1, 784, 1), as required by forward method of the model
