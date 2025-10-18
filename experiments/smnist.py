@@ -53,10 +53,10 @@ parser.add_argument("--trials", type=int, default=1, help="How many times to run
 parser.add_argument("--dt", type=float, default=0.042, help="step size <dt> of the coRNN")
 #   stiffness (gamma)
 parser.add_argument("--gamma", type=float, default=2.7, help="y controle parameter <gamma> of the coRNN")
-parser.add_argument("--gamma_range", type=float, default=2.7, help="y controle parameter <gamma> of the coRNN")
+parser.add_argument("--gamma_range", type=float, default=1, help="y controle parameter <gamma> of the coRNN")
 #   damping (epsilon)
-parser.add_argument("--epsilon", type=float, default=4.7, help="z controle parameter <epsilon> of the coRNN")
-parser.add_argument("--epsilon_range", type=float, default=4.7, help="z controle parameter <epsilon> of the coRNN")
+parser.add_argument("--epsilon", type=float, default=0.51, help="z controle parameter <epsilon> of the coRNN")
+parser.add_argument("--epsilon_range", type=float, default=0.5, help="z controle parameter <epsilon> of the coRNN")
 
 # PARAMETERS FOR ESN MODEL:
 #   leaky factor
@@ -64,7 +64,7 @@ parser.add_argument("--leaky", type=float, default=1.0)
 
 # OTHER SPECIFIC PARAMETERS
 #   spectral radius (max abs eigenvalue of the recurrent matrix). For ESN and pure RON
-parser.add_argument("--rho", type=float, default=0.99, help="ESN spectral radius")
+parser.add_argument("--rho", type=float, default=9, help="ESN spectral radius")
 #   diffusive term (to ensure stability of the forward Euler method). For pure RON
 parser.add_argument("--diffusive_gamma", type=float, default=0.0, help="diffusive term")
 #   topology of the reservoir (and scaling factor for ring/band/toeplitz cases). For pure RON
@@ -76,6 +76,7 @@ parser.add_argument("--topology",
 parser.add_argument("--reservoir_scaler", type=float, default=1.0, help="Scaler in case of ring/band/toeplitz reservoir")
 #   sparsity of the connections in the reservoir (0: fully connected; 1: everything unconnected). For ESN and pure RON
 parser.add_argument("--sparsity", type=float, default=0.0, help="Sparsity of the reservoir")
+
 
 args = parser.parse_args()
 if args.dataroot is None:
@@ -272,7 +273,7 @@ for i in tqdm(range(args.trials), 'Trials', leave=False):
     print()
 
 # Save results
-print('\nSaving results...')
+print('Saving results...')
 if args.ron:
     f = open(os.path.join(args.resultroot, f"sMNIST_log_RON_{args.topology}_{args.resultsuffix}.txt"), "a")
 elif args.pron:

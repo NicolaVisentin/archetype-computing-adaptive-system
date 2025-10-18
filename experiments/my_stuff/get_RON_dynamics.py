@@ -20,7 +20,8 @@ device = (torch.device("cuda")
     else torch.device("cpu")
 )
 # Get relevant paths
-model_dir = Path('results/trained_architectures') # folder with the trained architectures
+curr_dir = Path(__file__).parent
+model_dir = Path(curr_dir/'results/trained_architectures') # folder with the trained architectures
 imgs_dir = Path('acds/benchmarks/raw')            # folder with data
 
 # =========================================================
@@ -29,10 +30,10 @@ imgs_dir = Path('acds/benchmarks/raw')            # folder with data
 
 # Create an object of the reservoir
 n_inp = 1
-n_hid = 2 # default 256
+n_hid = 2
 dt = 0.042
-gamma = (2.7 - 2.7 / 2.0, 2.7 + 2.7 / 2.0)
-epsilon = (4.7 - 4.7 / 2.0, 4.7 + 4.7 / 2.0)
+gamma = (2.7 - 1 / 2.0, 2.7 + 1 / 2.0)
+epsilon = (0.51 - 0.5 / 2.0, 0.51 + 0.5 / 2.0)
 
 model = RandomizedOscillatorsNetwork(
     n_inp=n_inp,
@@ -41,7 +42,7 @@ model = RandomizedOscillatorsNetwork(
     gamma=gamma,
     epsilon=epsilon,
     diffusive_gamma=0.0,
-    rho=0.99,
+    rho=9,
     input_scaling=1.0,
     topology='full',
     reservoir_scaler=1.0,

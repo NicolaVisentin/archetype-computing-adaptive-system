@@ -22,8 +22,9 @@ device = (torch.device("cuda")
     else torch.device("cpu")
 )
 # Get relevant paths
-model_dir = Path('results/trained_architectures') # folder with the trained architectures to test
-imgs_dir = Path('acds/benchmarks/raw')            # folder with data
+curr_dir = Path(__file__).parent
+model_dir = Path(curr_dir/'results/trained_architectures') # folder with the trained architectures to test
+imgs_dir = Path('acds/benchmarks/raw')                     # folder with data
 
 # =========================================================
 # Re-create the full, saved network
@@ -31,10 +32,10 @@ imgs_dir = Path('acds/benchmarks/raw')            # folder with data
 
 # Create an object of the reservoir
 n_inp = 1
-n_hid = 256 # default 256
+n_hid = 1000
 dt = 0.042
-gamma = (2.7 - 2.7 / 2.0, 2.7 + 2.7 / 2.0)
-epsilon = (4.7 - 4.7 / 2.0, 4.7 + 4.7 / 2.0)
+gamma = (2.7 - 1 / 2.0, 2.7 + 1 / 2.0)
+epsilon = (0.51 - 0.5 / 2.0, 0.51 + 0.5 / 2.0)
 
 model = RandomizedOscillatorsNetwork(
     n_inp=n_inp,
@@ -43,7 +44,7 @@ model = RandomizedOscillatorsNetwork(
     gamma=gamma,
     epsilon=epsilon,
     diffusive_gamma=0.0,
-    rho=0.99,
+    rho=9,
     input_scaling=1.0,
     topology='full',
     reservoir_scaler=1.0,
@@ -84,7 +85,7 @@ transform = transforms.Compose([
     transforms.ToTensor(),             # convert to torch tensor float32 in [0, 1]
     transforms.Lambda(lambda x: 1 - x) # invert to have white digit on black background
 ])
-image_path = imgs_dir/'test_MNIST_0.png'
+image_path = imgs_dir/'test_MNIST_2.png'
 image = Image.open(image_path)
 image_tensor = transform(image).to(device) # (1,28,28), grayscale, torch tensor, on proper device, float32 values in [0,1]
 image_test = image_tensor.view(1,-1,1)     # resize to (1, 784, 1), as required by forward method of the model
