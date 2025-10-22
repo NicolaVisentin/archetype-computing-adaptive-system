@@ -22,7 +22,7 @@ device = (torch.device("cuda")
 # Get relevant paths
 curr_dir = Path(__file__).parent
 model_dir = Path(curr_dir/'results/trained_architectures') # folder with the trained architectures
-imgs_dir = Path('acds/benchmarks/raw')            # folder with data
+imgs_dir = Path('src/acds/benchmarks/raw')            # folder with data
 
 # =========================================================
 # Re-create the full, saved network

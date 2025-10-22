@@ -25,7 +25,7 @@ parser = argparse.ArgumentParser(description="training parameters")
 
 # GENERAL PARAMETERS:
 #   folder path where MNIST data are downloaded
-parser.add_argument("--dataroot", type=str, default='acds/benchmarks/raw')
+parser.add_argument("--dataroot", type=str, default='src/acds/benchmarks/raw')
 #   folder path where results are saved
 parser.add_argument("--resultroot", type=str, default='experiments/my_stuff/results')
 #   suffix to add to results file
