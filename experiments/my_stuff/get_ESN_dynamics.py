@@ -37,7 +37,7 @@ imgs_dir = Path('src/acds/benchmarks/raw')                 # folder with data
 
 # Create an object of the reservoir
 n_inp = 1
-n_hid = 2
+n_hid = 6
 
 model = DeepReservoir(
             input_size=n_inp,
@@ -50,13 +50,13 @@ model = DeepReservoir(
         ).to(device)
 
 # Load and assign saved parameters to the reservoir
-model_params = torch.load(model_dir/"sMNIST_ESN_2hidden/sMNIST_ESN_2hidden_model_0.pt", map_location=device)
+model_params = torch.load(model_dir/"sMNIST_ESN_6hidden/sMNIST_ESN_6hidden_model_0.pt", map_location=device)
 model.load_state_dict(model_params)
 model.eval()
 
 # Load saved scaler and classifier
-scaler = joblib.load(model_dir/"sMNIST_ESN_2hidden/sMNIST_ESN_2hidden_scaler_0.pkl")
-#classifier = joblib.load(model_dir/"sMNIST_ESN_2hidden/sMNIST_ESN_2hidden_classifier_0.pkl")
+scaler = joblib.load(model_dir/"sMNIST_ESN_6hidden/sMNIST_ESN_6hidden_scaler_0.pkl")
+#classifier = joblib.load(model_dir/"sMNIST_ESN_6hidden/sMNIST_ESN_6hidden_classifier_0.pkl")
 
 
 # =========================================================
@@ -89,19 +89,14 @@ activations = activations.cpu()    # pass to cpu (if not already there)
 dt = 1
 time = np.arange(0, dt*activations.shape[1], dt)
 
-fig, (ax1, ax2) = plt.subplots(2,1)
-
-ax1.plot(time, activations[0,:,0], label=r'$y_1(t)$')
-ax1.grid(True)
-ax1.set_xlabel('t [s]')
-ax1.set_ylabel(r'$y_1$')
-ax1.set_title('First hidden state')
-
-ax2.plot(time, activations[0,:,1], label=r'$y_2(t)$')
-ax2.grid(True)
-ax2.set_xlabel('t [s]')
-ax2.set_ylabel(r'$y_2$')
-ax2.set_title('Second hidden state')
+plt.figure()
+for i in range(n_hid):
+    plt.plot(time, activations[0,:,i], label=f'y{i}(t)')
+plt.grid(True)
+plt.xlabel('t [s]')
+plt.ylabel('y')
+plt.title('Hidden states')
+plt.legend()
 
 plt.tight_layout()
 plt.show()
