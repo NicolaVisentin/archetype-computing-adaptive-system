@@ -31,9 +31,9 @@ parser.add_argument("--resultroot", type=str, default='experiments/my_stuff/resu
 #   suffix to add to results file
 parser.add_argument("--resultsuffix", type=str, default="", help="suffix to append to the result file name")
 #   number of hidden unities in the net
-parser.add_argument("--n_hid", type=int, default=256, help="hidden size of recurrent net")
+parser.add_argument("--n_hid", type=int, default=1000, help="hidden size of recurrent net")
 #   batch size
-parser.add_argument("--batch", type=int, default=1000, help="batch size")
+parser.add_argument("--batch", type=int, default=500, help="batch size")
 #   force use cpu
 parser.add_argument("--cpu", action="store_true")
 #   model choice
@@ -60,7 +60,7 @@ parser.add_argument("--epsilon_range", type=float, default=0.5, help="z controle
 
 # PARAMETERS FOR ESN MODEL:
 #   leaky factor
-parser.add_argument("--leaky", type=float, default=1.0)
+parser.add_argument("--leaky", type=float, default=0.001)
 
 # OTHER SPECIFIC PARAMETERS
 #   spectral radius (max abs eigenvalue of the recurrent matrix). For ESN and pure RON
@@ -165,7 +165,13 @@ elif args.esn:
     netw = 'ESN'
 else:
     raise ValueError("Wrong model choice.")
-save_dir = os.path.join(args.resultroot, f'trained_architectures/sMNIST_{netw}_{args.topology}_{args.resultsuffix}')
+
+suffix = f"_{args.resultsuffix}" if args.resultsuffix else ""
+if args.ron:
+    save_dir = os.path.join(args.resultroot, f'trained_architectures/sMNIST_{netw}_{args.topology}{suffix}')
+else:
+    save_dir = os.path.join(args.resultroot, f'trained_architectures/sMNIST_{netw}{suffix}')
+    
 os.makedirs(save_dir, exist_ok=True)  # create folder if not there already
 
 # Iterations
@@ -264,26 +270,28 @@ for i in tqdm(range(args.trials), 'Trials', leave=False):
 
     # Save the trained network
     print('\nSaving trained network...')
-    model_path = os.path.join(save_dir, f"sMNIST_{netw}_{args.topology}_{args.resultsuffix}_model_{i}.pt")
-    torch.save(model.state_dict(), model_path) # save reservoir
-    scaler_path = os.path.join(save_dir, f"sMNIST_{netw}_{args.topology}_{args.resultsuffix}_scaler_{i}.pkl")
-    joblib.dump(scaler, scaler_path) # save scaler
-    classifier_path = os.path.join(save_dir, f"sMNIST_{netw}_{args.topology}_{args.resultsuffix}_classifier_{i}.pkl")
-    joblib.dump(classifier, classifier_path) # save classifier
+    if args.ron:
+        model_path = os.path.join(save_dir, f"sMNIST_{netw}_{args.topology}{suffix}_model_{i}.pt")
+        torch.save(model.state_dict(), model_path) # save reservoir
+        scaler_path = os.path.join(save_dir, f"sMNIST_{netw}_{args.topology}{suffix}_scaler_{i}.pkl")
+        joblib.dump(scaler, scaler_path) # save scaler
+        classifier_path = os.path.join(save_dir, f"sMNIST_{netw}_{args.topology}{suffix}_classifier_{i}.pkl")
+        joblib.dump(classifier, classifier_path) # save classifier
+    else:
+        model_path = os.path.join(save_dir, f"sMNIST_{netw}{suffix}_model_{i}.pt")
+        torch.save(model.state_dict(), model_path) # save reservoir
+        scaler_path = os.path.join(save_dir, f"sMNIST_{netw}{suffix}_scaler_{i}.pkl")
+        joblib.dump(scaler, scaler_path) # save scaler
+        classifier_path = os.path.join(save_dir, f"sMNIST_{netw}{suffix}_classifier_{i}.pkl")
+        joblib.dump(classifier, classifier_path) # save classifier
     print()
 
 # Save results
 print('Saving results...')
 if args.ron:
-    f = open(os.path.join(args.resultroot, f"sMNIST_log_RON_{args.topology}_{args.resultsuffix}.txt"), "a")
-elif args.pron:
-    f = open(os.path.join(args.resultroot, f"sMNIST_log_PRON_{args.resultsuffix}.txt"), "a")
-elif args.mspron:
-    f = open(os.path.join(args.resultroot, f"sMNIST_log_MSPRON_{args.resultsuffix}.txt"), "a")
-elif args.esn:
-    f = open(os.path.join(args.resultroot, f"sMNIST_log_ESN_{args.resultsuffix}.txt"), "a")
+    f = open(os.path.join(args.resultroot, f"sMNIST_log_{netw}_{args.topology}{suffix}.txt"), "a")
 else:
-    raise ValueError("Wrong model choice.")
+    f = open(os.path.join(args.resultroot, f"sMNIST_log_{netw}{suffix}.txt"), "a")
 
 ar = ""
 for k, v in vars(args).items():
