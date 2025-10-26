@@ -1,5 +1,10 @@
 # Script to get the hidden dynamics of the reservoir
 
+# =========================================================
+# Setup
+# =========================================================
+
+# Imports
 import numpy as np
 import torch
 import joblib
@@ -19,10 +24,12 @@ device = (torch.device("cuda")
     if torch.cuda.is_available()
     else torch.device("cpu")
 )
+
 # Get relevant paths
-curr_dir = Path(__file__).parent
+curr_dir = Path(__file__).parent                           # current folder
 model_dir = Path(curr_dir/'results/trained_architectures') # folder with the trained architectures
-imgs_dir = Path('src/acds/benchmarks/raw')            # folder with data
+imgs_dir = Path('src/acds/benchmarks/raw')                 # folder with data
+
 
 # =========================================================
 # Re-create the full, saved network
