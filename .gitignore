@@ -1,3 +1,6 @@
+# Custom
+experiments/my_stuff/results
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 .idea/
