@@ -37,7 +37,7 @@ imgs_dir = Path('src/acds/benchmarks/raw')                 # folder with data
 
 # Create an object of the reservoir
 n_inp = 1
-n_hid = 2
+n_hid = 6
 dt = 0.042
 gamma = (2.7 - 1 / 2.0, 2.7 + 1 / 2.0)
 epsilon = (0.51 - 0.5 / 2.0, 0.51 + 0.5 / 2.0)
@@ -58,13 +58,13 @@ model = RandomizedOscillatorsNetwork(
 ).to(device)
 
 # Load and assign saved parameters to the reservoir
-model_params = torch.load(model_dir/"sMNIST_RON_full_2hidden/sMNIST_RON_full_2hidden_model_0.pt", map_location=device)
+model_params = torch.load(model_dir/"sMNIST_RON_full_6hidden/sMNIST_RON_full_6hidden_model_5.pt", map_location=device)
 model.load_state_dict(model_params)
 model.eval()
 
-# Load saved scaler and classifier
-scaler = joblib.load(model_dir/"sMNIST_RON_full_2hidden/sMNIST_RON_full_2hidden_scaler_0.pkl")
-#classifier = joblib.load(model_dir/"sMNIST_RON_full_2hidden/sMNIST_RON_full_2hidden_classifier_0.pkl")
+# # Load saved scaler and classifier
+# scaler = joblib.load(model_dir/"sMNIST_RON_full_6hidden/sMNIST_RON_full_6hidden_scaler_5.pkl")
+# classifier = joblib.load(model_dir/"sMNIST_RON_full_6hidden/sMNIST_RON_full_6hidden_classifier_5.pkl")
 
 
 # =========================================================
@@ -84,23 +84,23 @@ image_tensor = image_mnist.to(device)  # (1,28,28), grayscale, torch tensor, on 
 image_test = image_tensor.view(1,-1,1) # resize to (1, 784, 1), as required by forward method of the model
 
 # Custom image
-#image_test = torch.zeros((1, 784, 1), device=device) # completely black image (null input)
+image_test = torch.zeros((1, 784, 1), device=device) # completely black image (null input)
 
 # =========================================================
 # Get the dynamics of the reservoir
 # =========================================================
 
 # Feed it to the model
-activations = model(image_test)[0] # hidden states time history (batch_size, num_steps, n_hid). In this case (1,784,2)
-activations = activations.cpu()    # pass to cpu (if not already there)
-#activations = scaler.transform(activations) 
+out = model(image_test)                   # tuple (states_hist, last_states)
+states_histories = out[0]                 # hidden states time history (batch_size, num_steps, n_hid). In this case (1, 784, n_hid)                # last states (batch_size, n_hid)
+states_histories = states_histories.cpu() # pass to cpu (if not already there)
 
 # Show evolution of the states
-time = np.arange(0, dt*activations.shape[1], dt)
+time = np.arange(0, dt*states_histories.shape[1], dt)
 
 plt.figure()
 for i in range(n_hid):
-    plt.plot(time, activations[0,:,i], label=f'y{i}(t)')
+    plt.plot(time, states_histories[0,:,i], label=f'y{i}(t)')
 plt.grid(True)
 plt.xlabel('t [s]')
 plt.ylabel('y')

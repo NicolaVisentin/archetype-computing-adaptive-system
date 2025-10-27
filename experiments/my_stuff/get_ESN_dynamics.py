@@ -54,9 +54,9 @@ model_params = torch.load(model_dir/"sMNIST_ESN_6hidden/sMNIST_ESN_6hidden_model
 model.load_state_dict(model_params)
 model.eval()
 
-# Load saved scaler and classifier
-scaler = joblib.load(model_dir/"sMNIST_ESN_6hidden/sMNIST_ESN_6hidden_scaler_0.pkl")
-#classifier = joblib.load(model_dir/"sMNIST_ESN_6hidden/sMNIST_ESN_6hidden_classifier_0.pkl")
+# # Load saved scaler and classifier
+# scaler = joblib.load(model_dir/"sMNIST_ESN_6hidden/sMNIST_ESN_6hidden_scaler_0.pkl")
+# classifier = joblib.load(model_dir/"sMNIST_ESN_6hidden/sMNIST_ESN_6hidden_classifier_0.pkl")
 
 
 # =========================================================
@@ -81,17 +81,17 @@ image_test = image_tensor.view(1,-1,1) # resize to (1, 784, 1), as required by f
 # =========================================================
 
 # Feed it to the model
-activations = model(image_test)[0] # hidden states time history (batch_size, num_steps, n_hid). In this case (1,784,2)
-activations = activations.cpu()    # pass to cpu (if not already there)
-#activations = scaler.transform(activations) 
+out = model(image_test)                   # tuple (states_hist, last_states)
+states_histories = out[0]                 # hidden states time history (batch_size, num_steps, n_hid). In this case (1, 784, n_hid)                # last states (batch_size, n_hid)
+states_histories = states_histories.cpu() # pass to cpu (if not already there)
 
 # Show evolution of the states
 dt = 1
-time = np.arange(0, dt*activations.shape[1], dt)
+time = np.arange(0, dt*states_histories.shape[1], dt)
 
 plt.figure()
 for i in range(n_hid):
-    plt.plot(time, activations[0,:,i], label=f'y{i}(t)')
+    plt.plot(time, states_histories[0,:,i], label=f'y{i}(t)')
 plt.grid(True)
 plt.xlabel('t [s]')
 plt.ylabel('y')
