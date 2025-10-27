@@ -38,7 +38,7 @@ imgs_dir = Path('src/acds/benchmarks/raw')                 # folder with dataset
 
 # Create an object of the reservoir
 n_inp = 1
-n_hid = 1000
+n_hid = 6
 dt = 0.042
 gamma = (2.7 - 1 / 2.0, 2.7 + 1 / 2.0)
 epsilon = (0.51 - 0.5 / 2.0, 0.51 + 0.5 / 2.0)
@@ -59,13 +59,13 @@ model = RandomizedOscillatorsNetwork(
 ).to(device)
 
 # Load and assign saved parameters to the reservoir
-model_params = torch.load(model_dir/"sMNIST_RON_full_default/sMNIST_RON_full_default_model_0.pt", map_location=device)
+model_params = torch.load(model_dir/"sMNIST_RON_full_6hidden/sMNIST_RON_full_6hidden_model_5.pt", map_location=device)
 model.load_state_dict(model_params)
 model.eval()
 
 # Load saved scaler and classifier
-scaler = joblib.load(model_dir/"sMNIST_RON_full_default/sMNIST_RON_full_default_scaler_0.pkl")
-classifier = joblib.load(model_dir/"sMNIST_RON_full_default/sMNIST_RON_full_default_classifier_0.pkl")
+scaler = joblib.load(model_dir/"sMNIST_RON_full_6hidden/sMNIST_RON_full_6hidden_scaler_5.pkl")
+classifier = joblib.load(model_dir/"sMNIST_RON_full_6hidden/sMNIST_RON_full_6hidden_classifier_5.pkl")
 
 
 # =========================================================
@@ -102,10 +102,11 @@ image_test = image_tensor.view(1,-1,1) # resize to (1, 784, 1), as required by f
 # =========================================================
 
 # Feed it to the model
-activations = model(image_test)[-1][0] # out is (1, num_hidden): contains the last states of all hidden units: those are our activations
-activations = activations.cpu()        # pass to cpu (if not already there)
-activations = scaler.transform(activations) 
-pred = classifier.predict(activations)[0]
+out = model(image_test)                     # list (states_hist, last_states)
+last_states = out[-1][0]                    # last hidden states (batch_size, n_hid). Contains the last states of all hidden units
+last_states = last_states.cpu()             # pass to cpu (if not already there)
+activations = scaler.transform(last_states) # these are our "real" activations (also apply scaling to the output)
+pred = classifier.predict(activations)[0]   # prediction with the trained classifier
 
 # Show prediction
 probs = classifier.predict_proba(activations).squeeze()
