@@ -272,7 +272,7 @@ for i in tqdm(range(args.trials), 'Trials', leave=False):
     print('\nSaving trained network...')
     if args.ron:
         model_path = os.path.join(save_dir, f"sMNIST_{netw}_{args.topology}{suffix}_model_{i}.pt")
-        torch.save(model.state_dict(), model_path) # save reservoir
+        torch.save(model.state_dict(), model_path) # save reservoir random parameters (epsilon, gamma, h2h, x2h, bias)
         scaler_path = os.path.join(save_dir, f"sMNIST_{netw}_{args.topology}{suffix}_scaler_{i}.pkl")
         joblib.dump(scaler, scaler_path) # save scaler
         classifier_path = os.path.join(save_dir, f"sMNIST_{netw}_{args.topology}{suffix}_classifier_{i}.pkl")
