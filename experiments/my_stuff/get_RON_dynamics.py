@@ -84,7 +84,7 @@ image_tensor = image_mnist.to(device)  # (1,28,28), grayscale, torch tensor, on 
 image_test = image_tensor.view(1,-1,1) # resize to (1, 784, 1), as required by forward method of the model
 
 # Custom image
-image_test = torch.zeros((1, 784, 1), device=device)
+#image_test = torch.zeros((1, 784, 1), device=device) # completely black image (null input)
 
 # =========================================================
 # Get the dynamics of the reservoir
