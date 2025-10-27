@@ -58,7 +58,8 @@ model = RandomizedOscillatorsNetwork(
     device=device,
 ).to(device)
 
-# Load and assign saved parameters to the reservoir
+# Load and assign saved parameters to the reservoir (! this assignes only epsilon, gamma, h2h, x2h, bias. Other
+# parameters must be initialized correctly !)
 model_params = torch.load(model_dir/"sMNIST_RON_full_6hidden/sMNIST_RON_full_6hidden_model_5.pt", map_location=device)
 model.load_state_dict(model_params)
 model.eval()
