@@ -75,6 +75,8 @@ image_mnist, _ = mnist_test_dataset[0] # extract first image (1,28,28), grayscal
 image_tensor = image_mnist.to(device)  # (1,28,28), grayscale, torch tensor, on proper device, float32 values in [0,1]
 image_test = image_tensor.view(1,-1,1) # resize to (1, 784, 1), as required by forward method of the model
 
+# Custom image
+#image_test = torch.zeros((1, 784, 1), device=device) # completely black image (null input)
 
 # =========================================================
 # Get the dynamics of the reservoir
@@ -88,15 +90,22 @@ states_histories = states_histories.cpu() # pass to cpu (if not already there)
 # Show evolution of the states
 dt = 1
 time = np.arange(0, dt*states_histories.shape[1], dt)
+velocities_histories = np.diff(states_histories, axis=1) / dt
 
-plt.figure()
+fig, (ax1, ax2) = plt.subplots(2, 1)
 for i in range(n_hid):
-    plt.plot(time, states_histories[0,:,i], label=f'y{i}(t)')
-plt.grid(True)
-plt.xlabel('t [s]')
-plt.ylabel('y')
-plt.title('Hidden states')
-plt.legend()
+    ax1.plot(time, states_histories[0,:,i], label=f'y{i+1}(t)')
+    ax2.plot(time[:-1], velocities_histories[0,:,i], label=f'yd{i+1}(t)')
+ax1.grid(True)
+ax2.grid(True)
+ax1.set_xlabel('t [s]')
+ax2.set_xlabel('t [s]')
+ax1.set_ylabel('y')
+ax2.set_ylabel('yd')
+ax1.set_title('Hidden states positions')
+ax2.set_title('Hidden states velocities')
+ax1.legend()
+ax2.legend()
 
 plt.tight_layout()
 plt.show()
