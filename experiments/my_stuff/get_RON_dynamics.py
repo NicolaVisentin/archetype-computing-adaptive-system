@@ -26,7 +26,9 @@ device = (torch.device("cuda")
 # Get relevant paths
 curr_dir = Path(__file__).parent                           # current folder
 model_dir = Path(curr_dir/'results/trained_architectures') # folder with the trained architectures
-imgs_dir = Path('src/acds/benchmarks/raw')                 # folder with data
+imgs_dir = Path('src/acds/benchmarks/raw')                 # folder with datasave_dataset_dir.mkdir(parents=True, exist_ok=True)
+plots_dir = curr_dir/'plots'/Path(__file__).stem           # folder to save plots
+plots_dir.mkdir(parents=True, exist_ok=True)
 
 
 # =========================================================
@@ -111,6 +113,19 @@ ax1.set_title('Hidden states positions')
 ax2.set_title('Hidden states velocities')
 ax1.legend()
 ax2.legend()
-
 plt.tight_layout()
+plt.savefig(plots_dir/'states_evolution', bbox_inches='tight')
+#plt.show()
+
+# Show (y, yd) in y,yd plane
+fig, axs = plt.subplots(3,2, figsize=(12,9))
+for i, ax in enumerate(axs.flatten()):
+    sc = ax.scatter(states_histories[0,:-1,i], velocities_histories[0,:,i], c=time[:-1], cmap='viridis', label='t=0')
+    ax.grid(True)
+    ax.set_xlabel('y')
+    ax.set_ylabel('yd')
+    ax.set_title(f'hidden state {i+1}')
+    ax.legend()
+plt.tight_layout()
+plt.savefig(plots_dir/'state_space', bbox_inches='tight')
 plt.show()
