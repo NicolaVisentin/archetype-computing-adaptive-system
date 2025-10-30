@@ -2,6 +2,9 @@
 experiments/my_stuff/results/*
 !experiments/my_stuff/results/.gitkeep
 
+experiments/my_stuff/plots/*
+!experiments/my_stuff/plots/.gitkeep
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 .idea/
