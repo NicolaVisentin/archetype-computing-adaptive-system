@@ -1,5 +1,6 @@
 # Custom
-experiments/my_stuff/results
+experiments/my_stuff/results/*
+!experiments/my_stuff/results/.gitkeep
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
