@@ -5,6 +5,7 @@
 # Imports
 import numpy as np
 import torch
+import time
 import joblib
 from acds.archetypes import (
     DeepReservoir,
@@ -28,6 +29,8 @@ curr_dir = Path(__file__).parent                           # current folder
 model_dir = Path(curr_dir/'results/trained_architectures') # folder with the trained architectures
 imgs_dir = Path('src/acds/benchmarks/raw')                 # folder with data
 save_dataset_dir = Path(curr_dir/'results/other')          # folder to save the created dataset
+plots_dir = curr_dir/'plots'/Path(__file__).stem           # folder to save plots
+plots_dir.mkdir(parents=True, exist_ok=True)
 
 # Function to compute forward dynamics
 def forw_dynamics(u, y, yd, gamma, epsilon, W, V, b):
@@ -66,9 +69,9 @@ def forw_dynamics(u, y, yd, gamma, epsilon, W, V, b):
 # =========================================================
 
 # Parameters
-n_inp = 1 # input dimension
-n_hid = 6 # hidden states
-m = 10000 # dimension of the dataset
+n_inp = 1   # input dimension
+n_hid = 6   # hidden states
+m = 1000000 # dimension of the dataset
 
 # Sample m random configurations (y, yd). To have an idea about the ranges, take a look at get_RON_dynamics.py
 u = torch.zeros((m, 1), device=device)        # input (null in our case)
@@ -84,7 +87,10 @@ V = model_params["x2h"]
 b = model_params["bias"]
 
 # Compute labels ydd
+start = time.perf_counter()
 ydd = forw_dynamics(u, y, yd, gamma, epsilon, W, V, b)
+end = time.perf_counter()
+print(f'Dataset generated in {(end-start):.6f} s')
 
 # Save everything as numpy
 np.savez(
@@ -95,7 +101,7 @@ np.savez(
 )
 
 ###############################################################
-########## !! Check: compare with built in solver !! ##########
+########## !! Check: compare with built-in solver !! ##########
 
 # Create an object of the reservoir
 dt = 0.042
@@ -132,3 +138,21 @@ assert torch.any(torch.abs(ydd_check - ydd) < 1e-14), 'Something wrong'
 
 ########## !! End check !! ####################################
 ###############################################################
+
+
+# =========================================================
+# Visualize dataset
+# =========================================================
+
+# Plot phase space (y, yd) to see distribution of the samples
+if m < 1e6 + 1:
+    fig, axs = plt.subplots(3,2, figsize=(12,9))
+    for i, ax in enumerate(axs.flatten()):
+        sc = ax.scatter(y.cpu().numpy()[:,i], yd.cpu().numpy()[:,i])
+        ax.grid(True)
+        ax.set_xlabel('y')
+        ax.set_ylabel('yd')
+        ax.set_title(f'samples hidden state {i+1}')
+    plt.tight_layout()
+    plt.savefig(plots_dir/'state_space', bbox_inches='tight')
+    plt.show()
