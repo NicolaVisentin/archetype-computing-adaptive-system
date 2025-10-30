@@ -86,6 +86,7 @@ model.eval()
 # Custom image
 image_test = torch.zeros((1, 784, 1), device=device) # completely black image (null input)
 
+
 # =========================================================
 # Get the dynamics of the reservoir
 # =========================================================
