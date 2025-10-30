@@ -27,6 +27,8 @@ device = (torch.device("cuda")
 curr_dir = Path(__file__).parent                           # current folder
 model_dir = Path(curr_dir/'results/trained_architectures') # folder with the trained architectures
 imgs_dir = Path('src/acds/benchmarks/raw')                 # folder with data
+plots_dir = curr_dir/'plots'/Path(__file__).stem           # folder to save plots
+plots_dir.mkdir(parents=True, exist_ok=True)
 
 
 # =========================================================
@@ -61,20 +63,20 @@ model.eval()
 # Load desired images
 # =========================================================
 
-# Load an image from MNIST dataset
-transform = transforms.ToTensor()
-mnist_test_dataset = datasets.MNIST(
-    root=imgs_dir, 
-    train=False, 
-    transform=transform, 
-    download=False
-)                                      # load test dataset
-image_mnist, _ = mnist_test_dataset[0] # extract first image (1,28,28), grayscale, torch tensor, float32 values in [0,1]
-image_tensor = image_mnist.to(device)  # (1,28,28), grayscale, torch tensor, on proper device, float32 values in [0,1]
-image_test = image_tensor.view(1,-1,1) # resize to (1, 784, 1), as required by forward method of the model
+# # Load an image from MNIST dataset
+# transform = transforms.ToTensor()
+# mnist_test_dataset = datasets.MNIST(
+#     root=imgs_dir, 
+#     train=False, 
+#     transform=transform, 
+#     download=False
+# )                                      # load test dataset
+# image_mnist, _ = mnist_test_dataset[0] # extract first image (1,28,28), grayscale, torch tensor, float32 values in [0,1]
+# image_tensor = image_mnist.to(device)  # (1,28,28), grayscale, torch tensor, on proper device, float32 values in [0,1]
+# image_test = image_tensor.view(1,-1,1) # resize to (1, 784, 1), as required by forward method of the model
 
 # Custom image
-#image_test = torch.zeros((1, 784, 1), device=device) # completely black image (null input)
+image_test = torch.zeros((1, 784, 1), device=device) # completely black image (null input)
 
 # =========================================================
 # Get the dynamics of the reservoir
@@ -104,6 +106,19 @@ ax1.set_title('Hidden states positions')
 ax2.set_title('Hidden states velocities')
 ax1.legend()
 ax2.legend()
-
+plt.savefig(plots_dir/'states_evolution', bbox_inches='tight')
 plt.tight_layout()
+#plt.show()
+
+# Show (y, yd) in y,yd plane
+fig, axs = plt.subplots(3,2, figsize=(12,9))
+for i, ax in enumerate(axs.flatten()):
+    sc = ax.scatter(states_histories[0,:-1,i], velocities_histories[0,:,i], c=time[:-1], cmap='viridis', label='t=0')
+    ax.grid(True)
+    ax.set_xlabel('y')
+    ax.set_ylabel('yd')
+    ax.set_title(f'hidden state {i+1}')
+    ax.legend()
+plt.tight_layout()
+plt.savefig(plots_dir/'state_space', bbox_inches='tight')
 plt.show()
