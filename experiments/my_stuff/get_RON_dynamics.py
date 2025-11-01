@@ -98,22 +98,29 @@ states_histories = states_histories.cpu() # pass to cpu (if not already there)
 
 # Show evolution of the states and their velocities
 time = np.arange(0, dt*states_histories.shape[1], dt)
-velocities_histories = velocity = np.diff(states_histories, axis=1) / dt
+velocities_histories = np.diff(states_histories, axis=1) / dt
+accelerations_histories = np.diff(velocities_histories, axis=1) / dt
 
-fig, (ax1, ax2) = plt.subplots(2, 1)
+fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12,9))
 for i in range(n_hid):
     ax1.plot(time, states_histories[0,:,i], label=f'y{i+1}(t)')
     ax2.plot(time[:-1], velocities_histories[0,:,i], label=f'yd{i+1}(t)')
+    ax3.plot(time[:-2], accelerations_histories[0,:,i], label=f'ydd{i+1}(t)')
 ax1.grid(True)
 ax2.grid(True)
+ax3.grid(True)
 ax1.set_xlabel('t [s]')
 ax2.set_xlabel('t [s]')
+ax3.set_xlabel('t [s]')
 ax1.set_ylabel('y')
 ax2.set_ylabel('yd')
+ax3.set_ylabel('ydd')
 ax1.set_title('Hidden states positions')
 ax2.set_title('Hidden states velocities')
+ax3.set_title('Hidden states accelerations')
 ax1.legend()
 ax2.legend()
+ax3.legend()
 plt.tight_layout()
 plt.savefig(plots_dir/'states_evolution', bbox_inches='tight')
 #plt.show()
