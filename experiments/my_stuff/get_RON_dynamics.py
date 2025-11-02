@@ -29,6 +29,7 @@ model_dir = Path(curr_dir/'results/trained_architectures') # folder with the tra
 imgs_dir = Path('src/acds/benchmarks/raw')                 # folder with datasave_dataset_dir.mkdir(parents=True, exist_ok=True)
 plots_dir = curr_dir/'plots'/Path(__file__).stem           # folder to save plots
 plots_dir.mkdir(parents=True, exist_ok=True)
+save_results_dir = Path(curr_dir/'results/other')          # folder to save data
 
 
 # =========================================================
@@ -68,7 +69,7 @@ model.eval()
 
 
 # =========================================================
-# Load desired images
+# Load desired image
 # =========================================================
 
 # # Load an image from MNIST dataset
@@ -91,12 +92,12 @@ image_test = torch.zeros((1, 784, 1), device=device) # completely black image (n
 # Get the dynamics of the reservoir
 # =========================================================
 
-# Feed it to the model
+# Feed input to the model
 out = model(image_test)                   # tuple (states_hist, last_states)
 states_histories = out[0]                 # hidden states time history (batch_size, num_steps, n_hid). In this case (1, 784, n_hid)                # last states (batch_size, n_hid)
 states_histories = states_histories.cpu() # pass to cpu (if not already there)
 
-# Show evolution of the states and their velocities
+# Show states, velocities and accelerations in time
 time = np.arange(0, dt*states_histories.shape[1], dt)
 velocities_histories = np.diff(states_histories, axis=1) / dt
 accelerations_histories = np.diff(velocities_histories, axis=1) / dt
@@ -137,3 +138,12 @@ for i, ax in enumerate(axs.flatten()):
 plt.tight_layout()
 plt.savefig(plots_dir/'state_space', bbox_inches='tight')
 plt.show()
+
+# Save relevant data
+np.savez(
+    save_results_dir/'RON_evolution.npz', 
+    time = time[:-2],
+    y = states_histories[0,:-2], 
+    yd = velocities_histories[0,:-1], 
+    ydd = accelerations_histories[0,:],
+)
