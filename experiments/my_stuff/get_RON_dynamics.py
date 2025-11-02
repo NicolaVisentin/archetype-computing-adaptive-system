@@ -146,4 +146,5 @@ np.savez(
     y = states_histories[0,:-2], 
     yd = velocities_histories[0,:-1], 
     ydd = accelerations_histories[0,:],
+    u = image_test[0,:].cpu().numpy()
 )
