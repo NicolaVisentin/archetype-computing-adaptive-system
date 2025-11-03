@@ -58,7 +58,8 @@ model = RandomizedOscillatorsNetwork(
     device=device,
 ).to(device)
 
-# Load and assign saved parameters to the reservoir
+# Load and assign saved parameters to the reservoir (! only randomply generated parameters are assigned here. That
+# mean gamma, epsilon, h2h=W, x2h=V, bias)
 model_params = torch.load(model_dir/"sMNIST_RON_full_6hidden/sMNIST_RON_full_6hidden_model_5.pt", map_location=device)
 model.load_state_dict(model_params)
 model.eval()
@@ -72,20 +73,20 @@ model.eval()
 # Load desired image
 # =========================================================
 
-# # Load an image from MNIST dataset
-# transform = transforms.ToTensor()
-# mnist_test_dataset = datasets.MNIST(
-#     root=imgs_dir, 
-#     train=False, 
-#     transform=transform, 
-#     download=False
-# )                                      # load test dataset
-# image_mnist, _ = mnist_test_dataset[0] # extract first image (1,28,28), grayscale, torch tensor, float32 values in [0,1]
-# image_tensor = image_mnist.to(device)  # (1,28,28), grayscale, torch tensor, on proper device, float32 values in [0,1]
-# image_test = image_tensor.view(1,-1,1) # resize to (1, 784, 1), as required by forward method of the model
+# Load an image from MNIST dataset
+transform = transforms.ToTensor()
+mnist_test_dataset = datasets.MNIST(
+    root=imgs_dir, 
+    train=False, 
+    transform=transform, 
+    download=False
+)                                      # load test dataset
+image_mnist, _ = mnist_test_dataset[0] # extract first image (1,28,28), grayscale, torch tensor, float32 values in [0,1]
+image_tensor = image_mnist.to(device)  # (1,28,28), grayscale, torch tensor, on proper device, float32 values in [0,1]
+image_test = image_tensor.view(1,-1,1) # resize to (1, 784, 1), as required by forward method of the model
 
 # Custom image
-image_test = torch.zeros((1, 784, 1), device=device) # completely black image (null input)
+#image_test = torch.zeros((1, 784, 1), device=device) # completely black image (null input)
 
 
 # =========================================================
@@ -97,31 +98,37 @@ out = model(image_test)                   # tuple (states_hist, last_states)
 states_histories = out[0]                 # hidden states time history (batch_size, num_steps, n_hid). In this case (1, 784, n_hid)                # last states (batch_size, n_hid)
 states_histories = states_histories.cpu() # pass to cpu (if not already there)
 
-# Show states, velocities and accelerations in time
+# Show states, velocities, accelerations and input in time
 time = np.arange(0, dt*states_histories.shape[1], dt)
 velocities_histories = np.diff(states_histories, axis=1) / dt
 accelerations_histories = np.diff(velocities_histories, axis=1) / dt
+input_history = image_test.cpu().numpy()
 
-fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12,9))
+fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, figsize=(12,12))
 for i in range(n_hid):
     ax1.plot(time, states_histories[0,:,i], label=f'y{i+1}(t)')
     ax2.plot(time[:-1], velocities_histories[0,:,i], label=f'yd{i+1}(t)')
     ax3.plot(time[:-2], accelerations_histories[0,:,i], label=f'ydd{i+1}(t)')
+ax4.plot(time, input_history[0,:,0])
 ax1.grid(True)
 ax2.grid(True)
 ax3.grid(True)
+ax4.grid(True)
 ax1.set_xlabel('t [s]')
 ax2.set_xlabel('t [s]')
 ax3.set_xlabel('t [s]')
+ax4.set_xlabel('t [s]')
 ax1.set_ylabel('y')
 ax2.set_ylabel('yd')
 ax3.set_ylabel('ydd')
+ax4.set_ylabel('u')
 ax1.set_title('Hidden states positions')
 ax2.set_title('Hidden states velocities')
 ax3.set_title('Hidden states accelerations')
-ax1.legend()
-ax2.legend()
-ax3.legend()
+ax4.set_title('Input')
+ax1.legend(loc='upper left', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+ax2.legend(loc='upper left', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+ax3.legend(loc='upper left', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
 plt.tight_layout()
 plt.savefig(plots_dir/'states_evolution', bbox_inches='tight')
 #plt.show()
@@ -146,5 +153,5 @@ np.savez(
     y = states_histories[0,:-2], 
     yd = velocities_histories[0,:-1], 
     ydd = accelerations_histories[0,:],
-    u = image_test[0,:].cpu().numpy()
+    u = input_history[0,:]
 )
