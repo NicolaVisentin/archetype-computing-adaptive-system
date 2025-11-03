@@ -28,9 +28,9 @@ device = (torch.device("cuda")
 curr_dir = Path(__file__).parent                           # current folder
 model_dir = Path(curr_dir/'results/trained_architectures') # folder with the trained architectures
 imgs_dir = Path('src/acds/benchmarks/raw')                 # folder with data
-save_dataset_dir = Path(curr_dir/'results/other')          # folder to save the created dataset
 plots_dir = curr_dir/'plots'/Path(__file__).stem           # folder to save plots
 plots_dir.mkdir(parents=True, exist_ok=True)
+save_dataset_dir = Path(curr_dir/'results/other')          # folder to save the created dataset
 
 # Function to compute forward dynamics
 def forw_dynamics(u, y, yd, gamma, epsilon, W, V, b):
@@ -69,14 +69,14 @@ def forw_dynamics(u, y, yd, gamma, epsilon, W, V, b):
 # =========================================================
 
 # Parameters
-n_inp = 1   # input dimension
-n_hid = 6   # hidden states
-m = 1000000 # dimension of the dataset
+n_inp = 1    # input dimension
+n_hid = 6    # hidden states
+m = int(1e6) # dimension of the dataset
 
-# Sample m random configurations (y, yd). To have an idea about the ranges, take a look at get_RON_dynamics.py
-u = torch.zeros((m, 1), device=device)        # input (null in our case)
-y = -2 + 4*torch.rand((m, 6), device=device)  # m samples y = [y1, ..., yN]^T
-yd = -2 + 4*torch.rand((m, 6), device=device) # m samples yd = [yd1, ..., ydN]^T
+# Sample m random configurations (y, yd, u). To have an idea about the ranges, take a look at get_RON_dynamics.py
+u = torch.rand((m, 1), device=device)              # m samples u (scalar input in [0,1]). Shape (m, 1)
+y = -2 + 4*torch.rand((m, 6), device=device)  # m samples y = [y1, ..., yN]^T. Shape (m, 6)
+yd = -2 + 4*torch.rand((m, 6), device=device) # m samples yd = [yd1, ..., ydN]^T. Shape (m, 6)
 
 # Extract saved model parameters
 model_params = torch.load(model_dir/"sMNIST_RON_full_6hidden/sMNIST_RON_full_6hidden_model_5.pt", map_location=device)
@@ -94,10 +94,11 @@ print(f'Dataset generated in {(end-start):.6f} s')
 
 # Save everything as numpy
 np.savez(
-    save_dataset_dir/'dataset_y_yd_ydd.npz', 
+    save_dataset_dir/'dataset_y_yd_u_ydd.npz', 
     y = y.cpu().numpy(), 
     yd = yd.cpu().numpy(), 
     ydd = ydd.cpu().numpy(),
+    u = u.cpu().numpy()
 )
 
 ###############################################################
