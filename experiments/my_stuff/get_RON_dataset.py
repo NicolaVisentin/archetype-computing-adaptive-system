@@ -74,9 +74,9 @@ n_hid = 6    # hidden states
 m = int(1e6) # dimension of the dataset
 
 # Sample m random configurations (y, yd, u). To have an idea about the ranges, take a look at get_RON_dynamics.py
-u = torch.rand((m, 1), device=device)              # m samples u (scalar input in [0,1]). Shape (m, 1)
-y = -2 + 4*torch.rand((m, 6), device=device)  # m samples y = [y1, ..., yN]^T. Shape (m, 6)
-yd = -2 + 4*torch.rand((m, 6), device=device) # m samples yd = [yd1, ..., ydN]^T. Shape (m, 6)
+u = torch.rand((m, n_inp), device=device)         # m samples u (scalar input in [0,1]). Shape (m, 1)
+y = -2 + 4*torch.rand((m, n_hid), device=device)  # m samples y = [y1, ..., yN]^T. Shape (m, n_hidden)
+yd = -2 + 4*torch.rand((m, n_hid), device=device) # m samples yd = [yd1, ..., ydN]^T. Shape (m, n_hidden)
 
 # Extract saved model parameters
 model_params = torch.load(model_dir/"sMNIST_RON_full_6hidden/sMNIST_RON_full_6hidden_model_5.pt", map_location=device)
