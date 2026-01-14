@@ -8,12 +8,14 @@
 import numpy as np
 import torch
 import joblib
+from tqdm import tqdm
 from acds.archetypes import (
     DeepReservoir,
     RandomizedOscillatorsNetwork,
     PhysicallyImplementableRandomizedOscillatorsNetwork,
     MultistablePhysicallyImplementableRandomizedOscillatorsNetwork,
 )
+from acds.benchmarks.mnist import get_mnist_data
 from PIL import Image
 from torchvision import transforms, datasets
 from sklearn import preprocessing
@@ -70,6 +72,64 @@ classifier = joblib.load(model_dir/"sMNIST_RON_full_6hidden/sMNIST_RON_full_6hid
 
 
 # =========================================================
+# Test on the test set
+# =========================================================
+
+# Function to test the trained classifier
+@torch.no_grad()
+def test(data_loader, classifier, scaler):
+    last_states, ys = [], []
+    # iterate through batches
+    for images, labels in tqdm(data_loader, f'Testing the model', leave=False):
+        images = images.to(device)
+        images = images.view(images.shape[0], -1) # (batch_size, 1, 28, 28) --> (batch_size, 784)
+        images = images.unsqueeze(-1)             # (batch_size, 784) --> (batch_size, 784, 1) as the forward 
+                                                  # method of the model expects (batch_size, num_timesteps, input_dim)
+        output = model(images) # forward method gives a tuple with 2 elements...
+        output = output[-1]    # ...we only want the last one, which is a list...
+        output = output[0]     # ...form which we extract the first element: a tensor (batch_size, n_hidden). Each row (associated
+                               # with one element of the batch) contains the last hidden states for all the hidden units
+        last_states.append(output.cpu())
+        ys.append(labels)
+
+    last_states = torch.cat(last_states, dim=0).numpy() # shape (num_train_images, num_hidden_units)
+    activations = scaler.transform(last_states)        
+    ys = torch.cat(ys, dim=0).numpy()                   # shape (num_train_images,)
+
+    return classifier.score(activations, ys), last_states, activations
+
+_, _, test_loader = get_mnist_data(
+    root=imgs_dir, 
+    bs_train=6000, 
+    bs_test=6000,
+    #valid_perc=0
+)
+
+# Test on test set
+score, last_states, activations = test(test_loader, classifier, scaler)
+print(score)
+
+# Visualize the activations for all the test set
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 5))
+for i in range(last_states.shape[1]):
+    ax1.scatter(last_states[:,i], (i+1)*np.ones(len(last_states)), label=f'Component {i+1}')
+ax1.set_title('Last states')
+ax1.set_xlabel(r'$y(t_{f})$')
+ax1.set_ylabel('component')
+ax1.grid(True)
+
+for i in range(activations.shape[1]):
+    ax2.scatter(activations[:,i], (i+1)*np.ones(len(activations)), label=f'Component {i+1}')
+ax2.set_title('Activations')
+ax2.set_xlabel(r'$\tilde{y}$')
+ax2.set_ylabel('component')
+ax2.grid(True)
+
+plt.tight_layout()
+plt.show()
+
+
+# =========================================================
 # Load desired image
 # =========================================================
 
@@ -122,4 +182,5 @@ ax2.set_xlabel('classes')
 ax2.set_ylabel('probability')
 ax2.set_xticks(np.arange(10)) 
 
+plt.tight_layout()
 plt.show()
