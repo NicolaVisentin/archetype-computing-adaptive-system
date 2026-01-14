@@ -81,7 +81,7 @@ mnist_test_dataset = datasets.MNIST(
     transform=transform, 
     download=False
 )                                      # load test dataset
-image_mnist, _ = mnist_test_dataset[0] # extract first image (1,28,28), grayscale, torch tensor, float32 values in [0,1]
+image_mnist, _ = mnist_test_dataset[0] # extract first image (1,28,28), grayscale, torch tensor, float32 values in [0,1]. It is a 7
 image_tensor = image_mnist.to(device)  # (1,28,28), grayscale, torch tensor, on proper device, float32 values in [0,1]
 image_test = image_tensor.view(1,-1,1) # resize to (1, 784, 1), as required by forward method of the model
 
@@ -95,7 +95,7 @@ image_test = image_tensor.view(1,-1,1) # resize to (1, 784, 1), as required by f
 
 # Feed input to the model
 out = model(image_test)                   # tuple (states_hist, last_states)
-states_histories = out[0]                 # hidden states time history (batch_size, num_steps, n_hid). In this case (1, 784, n_hid)                # last states (batch_size, n_hid)
+states_histories = out[0]                 # hidden states time history (batch_size, num_steps, n_hid). In this case (1, 784, n_hid)
 states_histories = states_histories.cpu() # pass to cpu (if not already there)
 
 # Show states, velocities, accelerations and input in time
@@ -155,3 +155,35 @@ np.savez(
     ydd = accelerations_histories[0,:],
     u = input_history[0,:]
 )
+
+
+# =========================================================
+# Compare with another image
+# =========================================================
+
+# Load another image from MNIST dataset
+image2_mnist, _ = mnist_test_dataset[1] # extract second image (1,28,28), grayscale, torch tensor, float32 values in [0,1]. It is a 2
+image2_tensor = image2_mnist.to(device)  # (1,28,28), grayscale, torch tensor, on proper device, float32 values in [0,1]
+image2_test = image2_tensor.view(1,-1,1) # resize to (1, 784, 1), as required by forward method of the model
+
+# Feed input to the model
+out2 = model(image2_test)                   # tuple (states_hist, last_states)
+states_histories2 = out2[0]                 # hidden states time history (batch_size, num_steps, n_hid). In this case (1, 784, n_hid)
+states_histories2 = states_histories2.cpu() # pass to cpu (if not already there)
+
+# Compares states and inputs in time
+time2 = np.arange(0, dt*states_histories2.shape[1], dt)
+input_history2 = image2_test.cpu().numpy()
+
+fig, axs = plt.subplots(3, 2, figsize=(16,9))
+for i, ax in enumerate(axs.flatten()):
+    ax.plot(time, states_histories[0,:,i], label='image1')
+    ax.plot(time2, states_histories2[0,:,i], label='image2')
+    ax.grid(True)
+    ax.set_xlabel('t [s]')
+    ax.set_ylabel('y')
+    ax.set_title(f'Component {i+1}')
+    ax.legend()
+plt.tight_layout()
+plt.savefig(plots_dir/'states_comparison', bbox_inches='tight')
+plt.show()
