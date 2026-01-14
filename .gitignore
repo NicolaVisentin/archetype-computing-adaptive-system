@@ -2,6 +2,9 @@
 experiments/my_stuff/results/*
 !experiments/my_stuff/results/.gitkeep
 
+experiments/my_stuff/trained_architectures/*
+!experiments/my_stuff/trained_architectures/.gitkeep
+
 experiments/my_stuff/plots/*
 !experiments/my_stuff/plots/.gitkeep
 
