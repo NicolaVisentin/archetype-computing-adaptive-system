@@ -168,9 +168,9 @@ else:
 
 suffix = f"_{args.resultsuffix}" if args.resultsuffix else ""
 if args.ron:
-    save_dir = os.path.join(args.resultroot, f'trained_architectures/sMNIST_{netw}_{args.topology}{suffix}')
+    save_dir = os.path.join(args.resultroot, f'sMNIST_{netw}_{args.topology}{suffix}')
 else:
-    save_dir = os.path.join(args.resultroot, f'trained_architectures/sMNIST_{netw}{suffix}')
+    save_dir = os.path.join(args.resultroot, f'sMNIST_{netw}{suffix}')
     
 os.makedirs(save_dir, exist_ok=True)  # create folder if not there already
 
@@ -289,9 +289,9 @@ for i in tqdm(range(args.trials), 'Trials', leave=False):
 # Save results
 print('Saving results...')
 if args.ron:
-    f = open(os.path.join(args.resultroot, f"sMNIST_log_{netw}_{args.topology}{suffix}.txt"), "a")
+    f = open(os.path.join(save_dir, f"sMNIST_log_{netw}_{args.topology}{suffix}.txt"), "a")
 else:
-    f = open(os.path.join(args.resultroot, f"sMNIST_log_{netw}{suffix}.txt"), "a")
+    f = open(os.path.join(save_dir, f"sMNIST_log_{netw}{suffix}.txt"), "a")
 
 ar = ""
 for k, v in vars(args).items():
