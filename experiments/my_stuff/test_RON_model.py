@@ -39,10 +39,11 @@ save_results_dir = Path(curr_dir/'results'/Path(__file__).stem) # folder to save
 # Script settings
 # =========================================================
 
-n_hid = 6 # dimension of the hidden state (number of oscillators)
-architecture_to_test = 'sMNIST_RON_full_6hidden' # path of the folder containing trained scaler, model and classifier
-image_to_test = 0 # if it is an integer i, loads the i-th image from MNIST test set. Otherwise 'black' or 'custom'
-dt = 0.042 # dt of the RON reservoir (default RON: 0.042)
+n_hid = 12 # dimension of the hidden state (number of oscillators)
+architecture_to_test = 'sMNIST_RON_full_12hidden_DT0.006_RHO0.99' # path of the folder containing trained scaler, model and classifier
+image_to_test = 0 # if it is an integer i, loads the i-th image from MNIST test set. Otherwise 'black' or 'custom' or 'black_long'
+dt = 0.006 # dt of the RON reservoir (default RON: 0.042)
+rho = 0.99 # spectral radius of the hidden-to-hidden weight matrix (defaul RON: 9)
 
 # ------------
 
@@ -58,7 +59,6 @@ save_results_dir.mkdir(parents=True, exist_ok=True)
 
 # Create an object of the reservoir
 n_inp = 1
-dt = dt # NOT dummy (default RON: 0.042)
 gamma = (2.7 - 1 / 2.0, 2.7 + 1 / 2.0) # dummy
 epsilon = (0.51 - 0.5 / 2.0, 0.51 + 0.5 / 2.0) # dummy
 
@@ -69,7 +69,7 @@ model = RandomizedOscillatorsNetwork(
     gamma=gamma,
     epsilon=epsilon,
     diffusive_gamma=0.0,
-    rho=9,
+    rho=rho,
     input_scaling=1.0,
     topology='full',
     reservoir_scaler=1.0,
@@ -79,13 +79,13 @@ model = RandomizedOscillatorsNetwork(
 
 # Load and assign saved parameters to the reservoir (! this assignes only epsilon, gamma, h2h, x2h, bias. Other
 # parameters must be initialized correctly !)
-model_params = torch.load(model_dir/architecture_to_test/f"{architecture_to_test}_model_5.pt", map_location=device)
+model_params = torch.load(model_dir/architecture_to_test/f"{architecture_to_test}_model_1.pt", map_location=device)
 model.load_state_dict(model_params)
 model.eval()
 
 # Load saved scaler and classifier
-scaler = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_scaler_5.pkl")
-classifier = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_classifier_5.pkl")
+scaler = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_scaler_1.pkl")
+classifier = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_classifier_1.pkl")
 
 
 # =========================================================
@@ -165,6 +165,10 @@ mnist_test_dataset = datasets.MNIST(
 # Load image to test
 if image_to_test == 'black':
     image_test = torch.zeros((1, 784, 1), device=device) # completely black image (null input)
+    image_tensor = torch.zeros((1, 28, 28), device=device)
+elif image_to_test == 'black_long':
+    n_steps = int(50/dt) # simulate 50 seconds
+    image_test = torch.zeros((1, n_steps, 1), device=device) # completely black image (null input)
     image_tensor = torch.zeros((1, 28, 28), device=device)
 elif image_to_test == 'custom':
     transform = transforms.Compose([
