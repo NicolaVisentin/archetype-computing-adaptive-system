@@ -27,13 +27,11 @@ device = (torch.device("cuda")
 )
 
 # Get relevant paths
-curr_dir = Path(__file__).parent                   # current folder
-model_dir = Path(curr_dir/'trained_architectures') # folder with the trained architectures to test
-imgs_dir = Path('src/acds/benchmarks/raw')         # folder with datasets
-plots_dir = curr_dir/'plots'/Path(__file__).stem   # folder to save plots
-save_results_dir = Path(curr_dir/'results')        # folder to save data
-
-plots_dir.mkdir(parents=True, exist_ok=True)
+curr_dir = Path(__file__).parent                                # current folder
+model_dir = Path(curr_dir/'trained_architectures')              # folder with the trained architectures to test
+imgs_dir = Path('src/acds/benchmarks/raw')                      # folder with datasets
+plots_dir = curr_dir/'plots'/Path(__file__).stem                # folder to save plots
+save_results_dir = Path(curr_dir/'results'/Path(__file__).stem) # folder to save data
 
 
 # =========================================================
@@ -43,6 +41,11 @@ plots_dir.mkdir(parents=True, exist_ok=True)
 n_hid = 6 # dimension of the hidden state (number of oscillators)
 architecture_to_test = 'sMNIST_RON_full_6hidden' # path of the folder containing trained scaler, model and classifier
 image_to_test = 0 # if it is an integer i, loads the i-th image from MNIST test set. Otherwise 'black' or 'custom'
+
+plots_dir = plots_dir/architecture_to_test
+save_results_dir = save_results_dir/architecture_to_test
+plots_dir.mkdir(parents=True, exist_ok=True)
+save_results_dir.mkdir(parents=True, exist_ok=True)
 
 
 # =========================================================
