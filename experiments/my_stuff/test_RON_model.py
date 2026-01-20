@@ -18,6 +18,7 @@ from PIL import Image
 from torchvision import transforms, datasets
 from sklearn import preprocessing
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 from pathlib import Path
 
 # Choose device (CPU/GPU)
@@ -41,6 +42,9 @@ save_results_dir = Path(curr_dir/'results'/Path(__file__).stem) # folder to save
 n_hid = 6 # dimension of the hidden state (number of oscillators)
 architecture_to_test = 'sMNIST_RON_full_6hidden' # path of the folder containing trained scaler, model and classifier
 image_to_test = 0 # if it is an integer i, loads the i-th image from MNIST test set. Otherwise 'black' or 'custom'
+dt = 0.042 # dt of the RON reservoir (default RON: 0.042)
+
+# ------------
 
 plots_dir = plots_dir/architecture_to_test
 save_results_dir = save_results_dir/architecture_to_test
@@ -54,7 +58,7 @@ save_results_dir.mkdir(parents=True, exist_ok=True)
 
 # Create an object of the reservoir
 n_inp = 1
-dt = 0.042 # NOT dummy
+dt = dt # NOT dummy (default RON: 0.042)
 gamma = (2.7 - 1 / 2.0, 2.7 + 1 / 2.0) # dummy
 epsilon = (0.51 - 0.5 / 2.0, 0.51 + 0.5 / 2.0) # dummy
 
@@ -123,13 +127,14 @@ score, last_states, activations = test(test_loader, classifier, scaler)
 print(f'Accuracy on the test set: {score}')
 
 # Visualize the activations for all the test set
-fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 5), sharex=True)
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
 for i in range(last_states.shape[1]):
     ax1.scatter(last_states[:,i], (i+1)*np.ones(len(last_states)), label=f'Component {i+1}')
 ax1.set_title('Last states')
 ax1.set_xlabel(r'$y(t_{f})$')
 ax1.set_ylabel('component')
 ax1.grid(True)
+ax1.yaxis.set_major_locator(MaxNLocator(integer=True))
 
 for i in range(activations.shape[1]):
     ax2.scatter(activations[:,i], (i+1)*np.ones(len(activations)), label=f'Component {i+1}')
@@ -137,6 +142,7 @@ ax2.set_title('Activations')
 ax2.set_xlabel(r'$\tilde{y}$')
 ax2.set_ylabel('component')
 ax2.grid(True)
+ax2.yaxis.set_major_locator(MaxNLocator(integer=True))
 
 plt.tight_layout()
 plt.savefig(plots_dir/'all_testset_activations', bbox_inches='tight')
@@ -147,9 +153,19 @@ plt.show()
 # Test on one single image
 # =========================================================
 
+# Load MNIST test dataset
+transform = transforms.ToTensor()
+mnist_test_dataset = datasets.MNIST(
+    root=imgs_dir, 
+    train=False, 
+    transform=transform, 
+    download=False
+)       
+
 # Load image to test
 if image_to_test == 'black':
     image_test = torch.zeros((1, 784, 1), device=device) # completely black image (null input)
+    image_tensor = torch.zeros((1, 28, 28), device=device)
 elif image_to_test == 'custom':
     transform = transforms.Compose([
         transforms.Grayscale(),            # convert to grayscale
@@ -162,13 +178,6 @@ elif image_to_test == 'custom':
     image_tensor = transform(image).to(device) # (1,28,28), grayscale, torch tensor, on proper device, float32 values in [0,1]
     image_test = image_tensor.view(1,-1,1)     # resize to (1, 784, 1), as required by forward method of the model
 else:
-    transform = transforms.ToTensor()
-    mnist_test_dataset = datasets.MNIST(
-        root=imgs_dir, 
-        train=False, 
-        transform=transform, 
-        download=False
-    )                                                  # load test dataset
     image_mnist, _ = mnist_test_dataset[image_to_test] # extract desired image (1,28,28), grayscale, torch tensor, float32 values in [0,1]
     image_tensor = image_mnist.to(device)              # (1,28,28), grayscale, torch tensor, on proper device, float32 values in [0,1]
     image_test = image_tensor.view(1,-1,1)             # resize to (1, 784, 1), as required by forward method of the model
