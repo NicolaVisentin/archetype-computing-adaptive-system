@@ -39,8 +39,8 @@ save_results_dir = Path(curr_dir/'results'/Path(__file__).stem) # folder to save
 # Script settings
 # =========================================================
 
-n_hid = 6 # dimension of the hidden state (number of oscillators)
-architecture_to_test = 'sMNIST_RON_full_6hidden_DT0.006_RHO0.99' # path of the folder containing trained scaler, model and classifier
+n_hid = 12 # dimension of the hidden state (number of oscillators)
+architecture_to_test = 'sMNIST_RON_full_12hidden_DT0.006_RHO0.99' # path of the folder containing trained scaler, model and classifier
 image_to_test = 0 # if it is an integer i, loads the i-th image from MNIST test set. Otherwise 'black' or 'custom' or 'black_long'
 dt = 0.006 # dt of the RON reservoir (default RON: 0.042)
 rho = 0.99 # spectral radius of the hidden-to-hidden weight matrix (defaul RON: 9)
