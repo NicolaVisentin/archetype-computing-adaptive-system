@@ -76,6 +76,7 @@ rho = 0.99 # spectral radius of the hidden-to-hidden weight matrix (defaul RON: 
 m = int(1e5) # dataset dimension (number of datapoints and labels)
 y_range = [-1, 1] # range of positions to sample. To have an idea about the ranges, take a look at test_RON_model.py
 yd_range = [-1, 1] # range of velocities to sample. To have an idea about the ranges, take a look at test_RON_model.py
+# !!! remember to choose the best model when loading the model, scaler and classifier !!!
 
 # ------------
 
