@@ -25,13 +25,12 @@ device = (torch.device("cuda")
 )
 
 # Get relevant paths
-curr_dir = Path(__file__).parent                   # current folder
-model_dir = Path(curr_dir/'trained_architectures') # folder with the trained architectures
-imgs_dir = Path('src/acds/benchmarks/raw')         # folder with data
-plots_dir = curr_dir/'plots'/Path(__file__).stem   # folder to save plots
-save_dataset_dir = Path(curr_dir/'results')        # folder to save the created dataset
+curr_dir = Path(__file__).parent                                # current folder
+model_dir = Path(curr_dir/'trained_architectures')              # folder with the trained architectures to test
+imgs_dir = Path('src/acds/benchmarks/raw')                      # folder with datasets
+plots_dir = curr_dir/'plots'/Path(__file__).stem                # folder to save plots
+save_results_dir = Path(curr_dir/'results'/Path(__file__).stem) # folder to save data
 
-plots_dir.mkdir(parents=True, exist_ok=True)
 
 # Function to compute forward dynamics
 def forw_dynamics(u, y, yd, gamma, epsilon, W, V, b):
@@ -70,8 +69,20 @@ def forw_dynamics(u, y, yd, gamma, epsilon, W, V, b):
 # Script settings
 # =========================================================
 
-n_hid = 6 # dimension of the hidden state (number of oscillators)
-architecture_to_test = 'sMNIST_RON_full_6hidden' # path of the folder containing trained scaler, model and classifier
+n_hid = 12 # dimension of the hidden state (number of oscillators)
+architecture_to_test = 'sMNIST_RON_full_12hidden_DT0.006_RHO0.99' # path of the folder containing trained scaler, model and classifier
+dt = 0.006 # dt of the RON reservoir (default RON: 0.042)
+rho = 0.99 # spectral radius of the hidden-to-hidden weight matrix (defaul RON: 9)
+m = int(1e5) # dataset dimension (number of datapoints and labels)
+y_range = [-1, 1] # range of positions to sample. To have an idea about the ranges, take a look at test_RON_model.py
+yd_range = [-1, 1] # range of velocities to sample. To have an idea about the ranges, take a look at test_RON_model.py
+
+# ------------
+
+plots_dir = plots_dir/architecture_to_test
+save_results_dir = save_results_dir/architecture_to_test
+plots_dir.mkdir(parents=True, exist_ok=True)
+save_results_dir.mkdir(parents=True, exist_ok=True)
 
 
 # =========================================================
@@ -80,15 +91,17 @@ architecture_to_test = 'sMNIST_RON_full_6hidden' # path of the folder containing
 
 # Parameters
 n_inp = 1    # input dimension
-m = int(1e6) # dimension of the dataset
 
 # Sample m random configurations (y, yd, u). To have an idea about the ranges, take a look at test_RON_model.py
+y_min, y_max = y_range
+yd_min, yd_max = yd_range
+
 u = torch.rand((m, n_inp), device=device)         # m samples u (scalar input in [0,1]). Shape (m, 1)
-y = -2 + 4*torch.rand((m, n_hid), device=device)  # m samples y = [y1, ..., yN]^T. Shape (m, n_hidden)
-yd = -2 + 4*torch.rand((m, n_hid), device=device) # m samples yd = [yd1, ..., ydN]^T. Shape (m, n_hidden)
+y = y_min + (y_max - y_min) * torch.rand((m, n_hid), device=device) # m samples y = [y1, ..., yN]^T. Shape (m, n_hidden)
+yd = yd_min + (yd_max - yd_min) * torch.rand((m, n_hid), device=device) # m samples yd = [yd1, ..., ydN]^T. Shape (m, n_hidden)
 
 # Extract saved model parameters
-model_params = torch.load(model_dir/architecture_to_test/f"{architecture_to_test}_model_5.pt", map_location=device)
+model_params = torch.load(model_dir/architecture_to_test/f"{architecture_to_test}_model_1.pt", map_location=device)
 gamma = model_params["gamma"]
 epsilon= model_params["epsilon"]
 W = model_params["h2h"]
@@ -103,7 +116,7 @@ print(f'Dataset generated in {(end-start):.6f} s')
 
 # Save everything as numpy
 np.savez(
-    save_dataset_dir/'dataset_y_yd_u_ydd.npz', 
+    save_results_dir/'dataset_y_yd_u_ydd.npz', 
     y = y.cpu().numpy(), 
     yd = yd.cpu().numpy(), 
     ydd = ydd.cpu().numpy(),
@@ -114,7 +127,6 @@ np.savez(
 ########## !! Check: compare with built-in solver !! ##########
 
 # Create an object of the reservoir
-dt = 0.042 # NOT dummy
 gamma = (2.7 - 1 / 2.0, 2.7 + 1 / 2.0) # dummy
 epsilon = (0.51 - 0.5 / 2.0, 0.51 + 0.5 / 2.0) # dummy
 
@@ -125,7 +137,7 @@ model = RandomizedOscillatorsNetwork(
     gamma=gamma,
     epsilon=epsilon,
     diffusive_gamma=0.0,
-    rho=9,
+    rho=rho,
     input_scaling=1.0,
     topology='full',
     reservoir_scaler=1.0,
