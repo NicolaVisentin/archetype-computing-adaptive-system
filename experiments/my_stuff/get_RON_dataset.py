@@ -169,13 +169,25 @@ assert torch.any(torch.abs(ydd_check - ydd) < 1e-14), 'Something wrong'
 
 # Plot phase space (y, yd) to see distribution of the samples
 if m < 1e6 + 1:
-    fig, axs = plt.subplots(3,2, figsize=(12,9))
-    for i, ax in enumerate(axs.flatten()):
-        sc = ax.scatter(y.cpu().numpy()[:,i], yd.cpu().numpy()[:,i])
-        ax.grid(True)
-        ax.set_xlabel('y')
-        ax.set_ylabel('yd')
-        ax.set_title(f'samples hidden state {i+1}')
+    n_cols = min(3, n_hid)
+    n_rows = int(np.ceil(n_hid / n_cols))
+    
+    fig, axs = plt.subplots(n_rows, n_cols, figsize=(16, 9))
+    if n_hid == 1:
+        axs = np.array([axs])
+    else:
+        axs = axs.flatten()
+    
+    for i in range(n_hid):
+        sc = axs[i].scatter(y.cpu().numpy()[:, i], yd.cpu().numpy()[:, i], s=10, alpha=0.6)
+        axs[i].grid(True)
+        axs[i].set_xlabel('y')
+        axs[i].set_ylabel('yd')
+        axs[i].set_title(f'Samples hidden state {i+1}')
+    
+    for i in range(n_hid, len(axs)):
+        axs[i].set_visible(False)
+    
     plt.tight_layout()
     plt.savefig(plots_dir/'state_space', bbox_inches='tight')
     plt.show()
