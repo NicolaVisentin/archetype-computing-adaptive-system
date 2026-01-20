@@ -27,7 +27,7 @@ parser = argparse.ArgumentParser(description="training parameters")
 #   folder path where MNIST data are downloaded
 parser.add_argument("--dataroot", type=str, default='src/acds/benchmarks/raw')
 #   folder path where results are saved
-parser.add_argument("--resultroot", type=str, default='experiments/my_stuff/results')
+parser.add_argument("--resultroot", type=str, default='experiments/my_stuff/trained_architectures')
 #   suffix to add to results file
 parser.add_argument("--resultsuffix", type=str, default="", help="suffix to append to the result file name")
 #   number of hidden unities in the net
