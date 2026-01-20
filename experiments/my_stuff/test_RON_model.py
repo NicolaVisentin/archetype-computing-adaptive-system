@@ -227,14 +227,9 @@ for i in range(n_hid):
     ax2.plot(time[:-1], velocities_histories[0,:,i], label=f'yd{i+1}(t)')
     ax3.plot(time[:-2], accelerations_histories[0,:,i], label=f'ydd{i+1}(t)')
 ax4.plot(time, input_history[0,:,0])
-ax1.grid(True)
-ax2.grid(True)
-ax3.grid(True)
-ax4.grid(True)
-ax1.set_xlabel('t [s]')
-ax2.set_xlabel('t [s]')
-ax3.set_xlabel('t [s]')
-ax4.set_xlabel('t [s]')
+for ax in [ax1, ax2, ax3, ax4]:
+    ax.grid(True)
+    ax.set_xlabel('t [s]')
 ax1.set_ylabel('y')
 ax2.set_ylabel('yd')
 ax3.set_ylabel('ydd')
@@ -251,14 +246,27 @@ plt.savefig(plots_dir/'states_evolution', bbox_inches='tight')
 #plt.show()
 
 # Show dynamics of the reservoir: (y, yd) in y,yd plane
-fig, axs = plt.subplots(3,2, figsize=(12,9))
-for i, ax in enumerate(axs.flatten()):
-    sc = ax.scatter(states_histories[0,:-1,i], velocities_histories[0,:,i], c=time[:-1], cmap='viridis', label='t=0')
-    ax.grid(True)
-    ax.set_xlabel('y')
-    ax.set_ylabel('yd')
-    ax.set_title(f'hidden state {i+1}')
-    ax.legend()
+n_cols = min(3, n_hid)
+n_rows = int(np.ceil(n_hid / n_cols))
+
+fig, axs = plt.subplots(n_rows, n_cols, figsize=(12, 9))
+if n_hid == 1:
+    axs = np.array([axs])
+else:
+    axs = axs.flatten()
+
+for i in range(n_hid):
+    sc = axs[i].scatter(states_histories[0, :-1, i], velocities_histories[0, :, i], 
+                        c=time[:-1], cmap='viridis', s=10, alpha=0.6, label='t=0')
+    axs[i].grid(True)
+    axs[i].set_xlabel('y')
+    axs[i].set_ylabel('yd')
+    axs[i].set_title(f'Hidden state {i+1}')
+    axs[i].legend()
+
+for i in range(n_hid, len(axs)):
+    axs[i].set_visible(False)
+
 plt.tight_layout()
 plt.savefig(plots_dir/'state_space', bbox_inches='tight')
 plt.show()
@@ -292,15 +300,24 @@ states_histories2 = states_histories2.cpu() # pass to cpu (if not already there)
 time2 = np.arange(0, dt*states_histories2.shape[1], dt)
 input_history2 = image2_test.cpu().numpy()
 
-fig, axs = plt.subplots(3, 2, figsize=(16,9))
-for i, ax in enumerate(axs.flatten()):
-    ax.plot(time, states_histories[0,:,i], label='image1')
-    ax.plot(time2, states_histories2[0,:,i], label='image2')
-    ax.grid(True)
-    ax.set_xlabel('t [s]')
-    ax.set_ylabel('y')
-    ax.set_title(f'Component {i+1}')
-    ax.legend()
+fig, axs = plt.subplots(n_rows, n_cols, figsize=(16, 9))
+if n_hid == 1:
+    axs = np.array([axs])
+else:
+    axs = axs.flatten()
+
+for i in range(n_hid):
+    axs[i].plot(time, states_histories[0, :, i], label='image1', alpha=0.8)
+    axs[i].plot(time2, states_histories2[0, :, i], label='image2', alpha=0.8)
+    axs[i].grid(True)
+    axs[i].set_xlabel('t [s]')
+    axs[i].set_ylabel('y')
+    axs[i].set_title(f'Component {i+1}')
+    axs[i].legend()
+
+for i in range(n_hid, len(axs)):
+    axs[i].set_visible(False)
+
 plt.tight_layout()
 plt.savefig(plots_dir/'states_comparison', bbox_inches='tight')
 plt.show()
