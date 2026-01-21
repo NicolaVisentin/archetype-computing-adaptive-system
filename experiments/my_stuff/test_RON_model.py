@@ -119,7 +119,7 @@ def test(data_loader, classifier, scaler):
 _, _, test_loader = get_mnist_data(
     root=imgs_dir, 
     bs_train=6000, 
-    bs_test=6000,
+    bs_test=600,
     valid_perc=0 # with valid_perc=0 loads empty validation loader and "full" test loader
 )
 
@@ -219,14 +219,18 @@ plt.tight_layout()
 plt.savefig(plots_dir/'example_prediction', bbox_inches='tight')
 plt.show()
 
-# Show dynamics of the reservoir: states, velocities, accelerations and input in time
+# Show dynamics of the reservoir: states, velocities, accelerations and input in time (!! MAX FIRST 16 STATES !!)
+if n_hid > 15:
+    n_hid_show = 15
+else:
+    n_hid_show = n_hid
 time = np.arange(0, dt*states_histories.shape[1], dt)
 velocities_histories = np.diff(states_histories, axis=1) / dt
 accelerations_histories = np.diff(velocities_histories, axis=1) / dt
 input_history = image_test.cpu().numpy()
 
 fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, figsize=(12,12))
-for i in range(n_hid):
+for i in range(n_hid_show):
     ax1.plot(time, states_histories[0,:,i], label=f'y{i+1}(t)')
     ax2.plot(time[:-1], velocities_histories[0,:,i], label=f'yd{i+1}(t)')
     ax3.plot(time[:-2], accelerations_histories[0,:,i], label=f'ydd{i+1}(t)')
@@ -250,23 +254,23 @@ plt.savefig(plots_dir/'states_evolution', bbox_inches='tight')
 #plt.show()
 
 # Show dynamics of the reservoir: (y, yd) in y,yd plane
-n_cols = min(3, n_hid)
-n_rows = int(np.ceil(n_hid / n_cols))
+n_cols = min(3, n_hid_show)
+n_rows = int(np.ceil(n_hid_show / n_cols))
 
 fig, axs = plt.subplots(n_rows, n_cols, figsize=(12, 9))
-if n_hid == 1:
+if n_hid_show == 1:
     axs = np.array([axs])
 else:
     axs = axs.flatten()
 
-for i in range(n_hid):
+for i in range(n_hid_show):
     sc = axs[i].scatter(states_histories[0, :-1, i], velocities_histories[0, :, i], 
                         c=time[:-1], cmap='viridis', s=10, alpha=0.6, label='t=0')
     axs[i].grid(True)
     axs[i].set_xlabel('y')
     axs[i].set_ylabel('yd')
     axs[i].set_title(f'Hidden state {i+1}')
-    axs[i].legend()
+    axs[i].legend(loc='upper left')
 
 for i in range(n_hid, len(axs)):
     axs[i].set_visible(False)
@@ -305,21 +309,21 @@ time2 = np.arange(0, dt*states_histories2.shape[1], dt)
 input_history2 = image2_test.cpu().numpy()
 
 fig, axs = plt.subplots(n_rows, n_cols, figsize=(16, 9))
-if n_hid == 1:
+if n_hid_show == 1:
     axs = np.array([axs])
 else:
     axs = axs.flatten()
 
-for i in range(n_hid):
+for i in range(n_hid_show):
     axs[i].plot(time, states_histories[0, :, i], label='image1', alpha=0.8)
     axs[i].plot(time2, states_histories2[0, :, i], label='image2', alpha=0.8)
     axs[i].grid(True)
     axs[i].set_xlabel('t [s]')
     axs[i].set_ylabel('y')
     axs[i].set_title(f'Component {i+1}')
-    axs[i].legend()
+    axs[i].legend(loc='upper left')
 
-for i in range(n_hid, len(axs)):
+for i in range(n_hid_show, len(axs)):
     axs[i].set_visible(False)
 
 plt.tight_layout()
