@@ -41,7 +41,7 @@ save_results_dir = Path(curr_dir/'results'/Path(__file__).stem) # folder to save
 
 n_hid = 12 # dimension of the hidden state (number of oscillators)
 architecture_to_test = 'sMNIST_RON_full_12hidden_DT0.006_RHO0.99' # path of the folder containing trained scaler, model and classifier
-image_to_test = 0 # if it is an integer i, loads the i-th image from MNIST test set. Otherwise 'black' or 'custom' or 'black_long'
+image_to_test = 0 # if it is an integer i, loads the i-th image from MNIST test set. Otherwise 'black' or 'custom' or 'black_long' or 'random_long'
 dt = 0.006 # dt of the RON reservoir (default RON: 0.042)
 rho = 0.99 # spectral radius of the hidden-to-hidden weight matrix (defaul RON: 9)
 # !!! remember to choose the best model when loading the model, scaler and classifier !!!
@@ -171,6 +171,10 @@ elif image_to_test == 'black_long':
     n_steps = int(50/dt) # simulate 50 seconds
     image_test = torch.zeros((1, n_steps, 1), device=device) # completely black image (null input)
     image_tensor = torch.zeros((1, 28, 28), device=device)
+elif image_to_test == 'random_long':
+    n_steps = int(50/dt) # simulate 50 seconds
+    image_test = torch.rand((1, n_steps, 1), device=device) # random values in [0,1)
+    image_tensor = torch.rand((1, 28, 28), device=device)
 elif image_to_test == 'custom':
     transform = transforms.Compose([
         transforms.Grayscale(),            # convert to grayscale
