@@ -28,22 +28,22 @@ device = (torch.device("cuda")
 )
 
 # Get relevant paths
-curr_dir = Path(__file__).parent                                # current folder
-model_dir = Path(curr_dir/'trained_architectures')              # folder with the trained architectures to test
-imgs_dir = Path('src/acds/benchmarks/raw')                      # folder with datasets
-plots_dir = curr_dir/'plots'/Path(__file__).stem                # folder to save plots
-save_results_dir = Path(curr_dir/'results'/Path(__file__).stem) # folder to save data
+curr_dir = Path(__file__).parent                                                     # current folder
+model_dir = Path(curr_dir.parent/'trained_architectures')                            # folder with the trained architectures to test
+imgs_dir = Path('src/acds/benchmarks/raw')                                           # folder with datasets
+plots_dir = curr_dir.parent/'plots'/curr_dir.stem/Path(__file__).stem                # folder to save plots
+save_results_dir = Path(curr_dir.parent/'results'/curr_dir.stem/Path(__file__).stem) # folder to save data
 
 
 # =========================================================
 # Script settings
 # =========================================================
 
-n_hid = 6 # dimension of the hidden state
-architecture_to_test = 'sMNIST_ESN_6hidden' # path of the folder containing trained scaler, model and classifier
+n_hid = 12 # dimension of the hidden state (number of oscillators)
+architecture_to_test = 'sMNIST_RON_full_12hidden_DT0.006_RHO0.99' # path of the folder containing trained scaler, model and classifier
 image_to_test = 0 # if it is an integer i, loads the i-th image from MNIST test set. Otherwise 'black' or 'custom' or 'black_long' or 'random_long'
-dt = 1.0 # dt of the ESN reservoir (default ESN: 1.0)
-rho = 0.999 # spectral radius of the hidden-to-hidden weight matrix (defaul ESN: 0.999)
+dt = 0.006 # dt of the RON reservoir (default RON: 0.042)
+rho = 0.99 # spectral radius of the hidden-to-hidden weight matrix (defaul RON: 9)
 # !!! remember to choose the best model when loading the model, scaler and classifier !!!
 
 # ------------
@@ -60,18 +60,25 @@ save_results_dir.mkdir(parents=True, exist_ok=True)
 
 # Create an object of the reservoir
 n_inp = 1
+gamma = (2.7 - 1 / 2.0, 2.7 + 1 / 2.0) # dummy
+epsilon = (0.51 - 0.5 / 2.0, 0.51 + 0.5 / 2.0) # dummy
 
-model = DeepReservoir(
-    input_size=n_inp,
-    tot_units=n_hid,
+model = RandomizedOscillatorsNetwork(
+    n_inp=n_inp,
+    n_hid=n_hid,
+    dt=dt,
+    gamma=gamma,
+    epsilon=epsilon,
+    diffusive_gamma=0.0,
+    rho=rho,
     input_scaling=1.0,
-    spectral_radius=rho,
-    leaky=0.001,
-    connectivity_recurrent=int((1 - 0.0) * n_hid),
-    connectivity_input=n_hid,
+    topology='full',
+    reservoir_scaler=1.0,
+    sparsity=0.0,
+    device=device,
 ).to(device)
 
-# Load and assign saved parameters to the reservoir (! this assignes only h2h, x2h, bias. Other
+# Load and assign saved parameters to the reservoir (! this assignes only epsilon, gamma, h2h, x2h, bias. Other
 # parameters must be initialized correctly !)
 model_params = torch.load(model_dir/architecture_to_test/f"{architecture_to_test}_model_1.pt", map_location=device)
 model.load_state_dict(model_params)
@@ -274,7 +281,7 @@ plt.show()
 
 # Save dynamics of the reservoir
 np.savez(
-    save_results_dir/'ESN_evolution.npz', 
+    save_results_dir/'RON_evolution.npz', 
     time = time[:-2],
     y = states_histories[0,:-2], 
     yd = velocities_histories[0,:-1], 

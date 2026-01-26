@@ -25,11 +25,11 @@ device = (torch.device("cuda")
 )
 
 # Get relevant paths
-curr_dir = Path(__file__).parent                                # current folder
-model_dir = Path(curr_dir/'trained_architectures')              # folder with the trained architectures to test
-imgs_dir = Path('src/acds/benchmarks/raw')                      # folder with datasets
-plots_dir = curr_dir/'plots'/Path(__file__).stem                # folder to save plots
-save_results_dir = Path(curr_dir/'results'/Path(__file__).stem) # folder to save data
+curr_dir = Path(__file__).parent                                                     # current folder
+model_dir = Path(curr_dir.parent/'trained_architectures')                            # folder with the trained architectures to test
+imgs_dir = Path('src/acds/benchmarks/raw')                                           # folder with datasets
+plots_dir = curr_dir.parent/'plots'/curr_dir.stem/Path(__file__).stem                # folder to save plots
+save_results_dir = Path(curr_dir.parent/'results'/curr_dir.stem/Path(__file__).stem) # folder to save data
 
 
 # Function to compute forward dynamics
