@@ -31,11 +31,11 @@ parser.add_argument("--resultroot", type=str, default='experiments/my_stuff/trai
 #   suffix to add to results file
 parser.add_argument("--resultsuffix", type=str, default="", help="suffix to append to the result file name")
 #   number of hidden unities in the net
-parser.add_argument("--n_hid", type=int, default=100, help="hidden size of recurrent net")
+parser.add_argument("--n_hid", type=int, default=1000, help="hidden size of recurrent net")
 #   batch size
 parser.add_argument("--batch", type=int, default=30, help="batch size")
 #   prediction lag
-parser.add_argument("--lag", type=int, default=1, help="prediction lag")
+parser.add_argument("--lag", type=int, default=84, help="prediction lag")
 #   force use cpu
 parser.add_argument("--cpu", action="store_true")
 #   model choice
@@ -44,7 +44,7 @@ parser.add_argument("--ron", action="store_true")
 parser.add_argument("--pron", action="store_true")
 parser.add_argument("--mspron", action="store_true")
 #   input scaling (max abs value of the input-reservoir connection weights)
-parser.add_argument("--inp_scaling", type=float, default=1.0, help="ESN input scaling")
+parser.add_argument("--inp_scaling", type=float, default=10.0, help="ESN input scaling")
 #   using test set for evaluating the trained model
 parser.add_argument("--use_test", action="store_true")
 #   number of trials (how many times we want to run the experiment)
@@ -52,13 +52,13 @@ parser.add_argument("--trials", type=int, default=1, help="How many times to run
 
 # PARAMETERS FOR ALL RONs MODELS:
 #   temporal discretization step (dt)
-parser.add_argument("--dt", type=float, default=0.042, help="step size <dt> of the coRNN")
+parser.add_argument("--dt", type=float, default=0.17, help="step size <dt> of the coRNN")
 #   stiffness (gamma)
-parser.add_argument("--gamma", type=float, default=2.7, help="y controle parameter <gamma> of the coRNN")
-parser.add_argument("--gamma_range", type=float, default=2.7, help="y controle parameter <gamma> of the coRNN")
+parser.add_argument("--gamma", type=float, default=2.0, help="y controle parameter <gamma> of the coRNN")
+parser.add_argument("--gamma_range", type=float, default=1.0, help="y controle parameter <gamma> of the coRNN")
 #   damping (epsilon)
-parser.add_argument("--epsilon", type=float, default=4.7, help="z controle parameter <epsilon> of the coRNN")
-parser.add_argument("--epsilon_range", type=float, default=4.7, help="z controle parameter <epsilon> of the coRNN")
+parser.add_argument("--epsilon", type=float, default=2.0, help="z controle parameter <epsilon> of the coRNN")
+parser.add_argument("--epsilon_range", type=float, default=0.5, help="z controle parameter <epsilon> of the coRNN")
 
 # PARAMETERS FOR ESN MODEL:
 #   leaky factor
@@ -66,7 +66,7 @@ parser.add_argument("--leaky", type=float, default=1.0)
 
 # OTHER SPECIFIC PARAMETERS
 #   spectral radius (max abs eigenvalue of the recurrent matrix). For ESN and pure RON
-parser.add_argument("--rho", type=float, default=0.99, help="ESN spectral radius")
+parser.add_argument("--rho", type=float, default=0.9, help="ESN spectral radius")
 #   diffusive term (to ensure stability of the forward Euler method). For pure RON
 parser.add_argument("--diffusive_gamma", type=float, default=0.0, help="diffusive term")
 #   topology of the reservoir (and scaling factor for ring/band/toeplitz cases). For pure RON
