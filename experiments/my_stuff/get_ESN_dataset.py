@@ -35,7 +35,7 @@ save_results_dir = Path(curr_dir/'results'/Path(__file__).stem) # folder to save
 # Function to compute forward dynamics
 def forw_dynamics(u, y, alpha, W, V, b):
     """
-    Forward dynamics of the RON reservoir. 
+    Forward dynamics of the ESN reservoir. 
 
     Args
     ----

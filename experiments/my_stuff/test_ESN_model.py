@@ -42,7 +42,7 @@ save_results_dir = Path(curr_dir/'results'/Path(__file__).stem) # folder to save
 n_hid = 6 # dimension of the hidden state
 architecture_to_test = 'sMNIST_ESN_6hidden' # path of the folder containing trained scaler, model and classifier
 image_to_test = 0 # if it is an integer i, loads the i-th image from MNIST test set. Otherwise 'black' or 'custom' or 'black_long' or 'random_long'
-dt = 1.0 # dt of the RON reservoir (default ESN: 1.0)
+dt = 1.0 # dt of the ESN reservoir (default ESN: 1.0)
 rho = 0.999 # spectral radius of the hidden-to-hidden weight matrix (defaul ESN: 0.999)
 # !!! remember to choose the best model when loading the model, scaler and classifier !!!
 
@@ -274,7 +274,7 @@ plt.show()
 
 # Save dynamics of the reservoir
 np.savez(
-    save_results_dir/'RON_evolution.npz', 
+    save_results_dir/'ESN_evolution.npz', 
     time = time[:-2],
     y = states_histories[0,:-2], 
     yd = velocities_histories[0,:-1], 
