@@ -122,7 +122,7 @@ def test(dataset, target, classifier, scaler):
     activations = activations.reshape(-1, args.n_hid)
     activations = scaler.transform(activations)
     predictions = classifier.predict(activations)
-    error = criterion_eval(torch.from_numpy(predictions).float(), torch.from_numpy(target).float()).item()
+    error = criterion_eval(torch.from_numpy(predictions).float(), torch.from_numpy(target.squeeze()).float()).item()
     return error
 
 
