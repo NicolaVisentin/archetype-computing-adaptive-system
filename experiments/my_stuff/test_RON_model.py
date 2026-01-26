@@ -219,7 +219,7 @@ plt.tight_layout()
 plt.savefig(plots_dir/'example_prediction', bbox_inches='tight')
 plt.show()
 
-# Show dynamics of the reservoir: states, velocities, accelerations and input in time (!! MAX FIRST 16 STATES !!)
+# Show dynamics of the reservoir: states, velocities, accelerations and input in time (!! MAX FIRST 15 STATES !!)
 if n_hid > 15:
     n_hid_show = 15
 else:
