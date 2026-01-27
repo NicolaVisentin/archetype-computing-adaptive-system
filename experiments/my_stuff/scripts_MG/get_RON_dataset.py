@@ -69,13 +69,12 @@ def forw_dynamics(u, y, yd, gamma, epsilon, W, V, b):
 # Script settings
 # =========================================================
 
-n_hid = 6 # dimension of the hidden state (number of oscillators)
-architecture_to_test = 'MG_RON_full_N6' # path of the folder containing trained scaler, model and classifier
-dt = 0.17 # dt of the RON reservoir (default RON: 0.17)
-rho = 0.9 # spectral radius of the hidden-to-hidden weight matrix (defaul RON: 0.9)
+n_hid = 6 # dimension of the hidden state (number of oscillators) (default RON: 1000)
+architecture_to_test = 'MG_RON_full_6hidden_DT0.05_inpscal0.1' # path of the folder containing trained scaler, model and classifier
+dt = 0.05 # dt of the RON reservoir (default RON: 0.17)
 m = int(1e5) # dataset dimension (number of datapoints and labels)
-y_range = [-0.6, 0.6] # range of positions to sample. To have an idea about the ranges, take a look at test_RON_model.py
-yd_range = [-0.6, 0.6] # range of velocities to sample. To have an idea about the ranges, take a look at test_RON_model.py
+y_range = [-0.2, 0.5] # range of positions to sample. To have an idea about the ranges, take a look at test_RON_model.py
+yd_range = [-0.2, 0.4] # range of velocities to sample. To have an idea about the ranges, take a look at test_RON_model.py
 # !!! remember to choose the best model when loading the model, scaler and classifier !!!
 
 # ------------
@@ -102,7 +101,7 @@ y = y_min + (y_max - y_min) * torch.rand((m, n_hid), device=device) # m samples 
 yd = yd_min + (yd_max - yd_min) * torch.rand((m, n_hid), device=device) # m samples yd = [yd1, ..., ydN]^T. Shape (m, n_hidden)
 
 # Extract saved model parameters
-model_params = torch.load(model_dir/architecture_to_test/f"{architecture_to_test}_model_9.pt", map_location=device)
+model_params = torch.load(model_dir/architecture_to_test/f"{architecture_to_test}_model_4.pt", map_location=device)
 gamma = model_params["gamma"]
 epsilon= model_params["epsilon"]
 W = model_params["h2h"]
@@ -138,8 +137,8 @@ model = RandomizedOscillatorsNetwork(
     gamma=gamma,
     epsilon=epsilon,
     diffusive_gamma=0.0,
-    rho=rho,
-    input_scaling=1.0,
+    rho=0.9,
+    input_scaling=10.0,
     topology='full',
     reservoir_scaler=1.0,
     sparsity=0.0,
