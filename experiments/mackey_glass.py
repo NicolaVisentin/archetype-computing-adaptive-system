@@ -112,7 +112,6 @@ epsilon = (args.epsilon - args.epsilon_range / 2.0,
            args.epsilon + args.epsilon_range / 2.0)
 
 # Function to test the trained classifier
-criterion_eval = torch.nn.L1Loss()
 @torch.no_grad()
 def test(dataset, target, classifier, scaler):
     dataset = dataset.reshape(1, -1, 1).to(device)
@@ -122,8 +121,13 @@ def test(dataset, target, classifier, scaler):
     activations = activations.reshape(-1, args.n_hid)
     activations = scaler.transform(activations)
     predictions = classifier.predict(activations)
-    error = criterion_eval(torch.from_numpy(predictions).float(), torch.from_numpy(target.squeeze()).float()).item()
-    return error
+    
+    predictions = torch.from_numpy(predictions).float()
+    target = torch.from_numpy(target.squeeze()).float()
+    rmse = torch.sqrt(torch.mean((predictions - target) ** 2))
+    rms_target = torch.sqrt(torch.mean(target ** 2))
+    nrmse = (rmse / rms_target).item()
+    return nrmse
 
 
 # =========================================================
@@ -151,7 +155,7 @@ else:
 os.makedirs(save_dir, exist_ok=True)  # create folder if not there already
 
 # Iterations
-train_mse, valid_mse, test_mse = [], [], []
+train_nrmse_list, valid_nrmse_list, test_nrmse_list = [], [], []
 for i in tqdm(range(args.trials), 'Trials', leave=False):
     # Initialize the model
     print('\nInitializing the model...')
@@ -229,12 +233,12 @@ for i in tqdm(range(args.trials), 'Trials', leave=False):
 
     # Evaluate the performances of the trained classifier
     print('\nEvaluating perfomances...')
-    train_nmse = test(train_dataset, train_target, classifier, scaler) # on the train set
-    valid_nmse = test(valid_dataset, valid_target, classifier, scaler) if not args.use_test else 0.0 # on the validation set
-    test_nmse = test(test_dataset, test_target, classifier, scaler) if args.use_test else 0.0 # on the test set
-    train_mse.append(train_nmse)
-    valid_mse.append(valid_nmse)
-    test_mse.append(test_nmse)
+    train_nrmse = test(train_dataset, train_target, classifier, scaler) # on the train set
+    valid_nrmse = test(valid_dataset, valid_target, classifier, scaler) if not args.use_test else 0.0 # on the validation set
+    test_nrmse = test(test_dataset, test_target, classifier, scaler) if args.use_test else 0.0 # on the test set
+    train_nrmse_list.append(train_nrmse)
+    valid_nrmse_list.append(valid_nrmse)
+    test_nrmse_list.append(test_nrmse)
 
     # Save the trained network
     print('\nSaving trained network...')
@@ -265,12 +269,12 @@ ar = ""
 for k, v in vars(args).items():
     ar += f"{str(k)}: {str(v)}, "
 ar += (
-    f"train: {[str(round(train_acc, 2)) for train_acc in train_mse]} "
-    f"valid: {[str(round(valid_acc, 2)) for valid_acc in valid_mse]} "
-    f"test: {[str(round(test_acc, 2)) for test_acc in test_mse]}"
-    f"mean/std train: {np.mean(train_mse), np.std(train_mse)} "
-    f"mean/std valid: {np.mean(valid_mse), np.std(valid_mse)} "
-    f"mean/std test: {np.mean(test_mse), np.std(test_mse)}"
+    f"train: {[str(round(train_acc, 2)) for train_acc in train_nrmse_list]} "
+    f"valid: {[str(round(valid_acc, 2)) for valid_acc in valid_nrmse_list]} "
+    f"test: {[str(round(test_acc, 2)) for test_acc in test_nrmse_list]}"
+    f"mean/std train: {np.mean(train_nrmse_list), np.std(train_nrmse_list)} "
+    f"mean/std valid: {np.mean(valid_nrmse_list), np.std(valid_nrmse_list)} "
+    f"mean/std test: {np.mean(test_nrmse_list), np.std(test_nrmse_list)}"
 )
 f.write(ar + "\n")
 f.close()
