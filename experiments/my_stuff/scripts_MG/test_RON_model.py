@@ -39,10 +39,11 @@ save_results_dir = Path(curr_dir.parent/'results'/curr_dir.stem/Path(__file__).s
 # Script settings
 # =========================================================
 
-n_hid = 6 # dimension of the hidden state (number of oscillators)
-architecture_to_test = 'MG_RON_full_N6' # path of the folder containing trained scaler, model and classifier
+n_hid = 1000 # dimension of the hidden state (number of oscillators) (default RON: 1000)
+architecture_to_test = 'MG_RON_full_default' # path of the folder containing trained scaler, model and classifier
 dt = 0.17 # dt of the RON reservoir (default RON: 0.17)
 rho = 0.9 # spectral radius of the hidden-to-hidden weight matrix (defaul RON: 0.9)
+inp_scaling = 10.0 # scaling for the input matrix (default RON: 10.0)
 lag = 84
 washout = 200
 # !!! remember to choose the best model when loading the model, scaler and classifier !!!
@@ -72,7 +73,7 @@ model = RandomizedOscillatorsNetwork(
     epsilon=epsilon,
     diffusive_gamma=0.0,
     rho=rho,
-    input_scaling=10.0,
+    input_scaling=inp_scaling,
     topology='full',
     reservoir_scaler=1.0,
     sparsity=0.0,
@@ -81,13 +82,13 @@ model = RandomizedOscillatorsNetwork(
 
 # Load and assign saved parameters to the reservoir (! this assignes only epsilon, gamma, h2h, x2h, bias. Other
 # parameters must be initialized correctly !)
-model_params = torch.load(model_dir/architecture_to_test/f"{architecture_to_test}_model_9.pt", map_location=device)
+model_params = torch.load(model_dir/architecture_to_test/f"{architecture_to_test}_model_0.pt", map_location=device)
 model.load_state_dict(model_params)
 model.eval()
 
 # Load saved scaler and classifier
-scaler = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_scaler_9.pkl")
-classifier = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_classifier_9.pkl")
+scaler = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_scaler_0.pkl")
+classifier = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_classifier_0.pkl")
 
 
 # =========================================================
