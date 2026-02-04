@@ -70,6 +70,7 @@ model = DeepReservoir(
     leaky=leaky,
     connectivity_recurrent=int((1 - 0.0) * n_hid),
     connectivity_input=n_hid,
+    dt = dt,
 ).to(device)
 
 # Load and assign saved parameters to the reservoir (! this assignes only h2h, x2h, bias. Other
