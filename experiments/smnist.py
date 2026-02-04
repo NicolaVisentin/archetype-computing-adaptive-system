@@ -47,10 +47,10 @@ parser.add_argument("--inp_scaling", type=float, default=1.0, help="ESN input sc
 parser.add_argument("--use_test", action="store_true")
 #   number of trials (how many times we want to run the experiment)
 parser.add_argument("--trials", type=int, default=1, help="How many times to run the experiment")
-
-# PARAMETERS FOR ALL RONs MODELS:
 #   temporal discretization step (dt)
 parser.add_argument("--dt", type=float, default=0.042, help="step size <dt> of the coRNN")
+
+# PARAMETERS FOR ALL RONs MODELS:
 #   stiffness (gamma)
 parser.add_argument("--gamma", type=float, default=2.7, help="y controle parameter <gamma> of the coRNN")
 parser.add_argument("--gamma_range", type=float, default=1, help="y controle parameter <gamma> of the coRNN")
@@ -188,6 +188,7 @@ for i in tqdm(range(args.trials), 'Trials', leave=False):
             leaky=args.leaky,
             connectivity_recurrent=int((1 - args.sparsity) * args.n_hid),
             connectivity_input=args.n_hid,
+            dt = args.dt,
         ).to(device)
     elif args.ron:
         model = RandomizedOscillatorsNetwork(

@@ -46,6 +46,7 @@ class ReservoirCell(torch.nn.Module):
         leaky: float = 1.0,
         connectivity_input: int = 10,
         connectivity_recurrent: int = 10,
+        dt: float = 1.0
     ):
         """Initializes the ReservoirCell.
 
@@ -73,6 +74,7 @@ class ReservoirCell(torch.nn.Module):
         self.leaky = leaky
         self.connectivity_input = connectivity_input
         self.connectivity_recurrent = connectivity_recurrent
+        self.dt = dt
 
         self.kernel = (
             sparse_tensor_init(input_size, self.units, self.connectivity_input)
@@ -112,7 +114,7 @@ class ReservoirCell(torch.nn.Module):
         state_part = torch.mm(h_prev, self.recurrent_kernel)
 
         output = torch.tanh(input_part + self.bias + state_part)
-        leaky_output = h_prev * (1 - self.leaky) + output * self.leaky
+        leaky_output = h_prev * (1 - self.dt*self.leaky) + self.dt*output * self.leaky
         return leaky_output, leaky_output
 
 
@@ -132,6 +134,7 @@ class ReservoirLayer(torch.nn.Module):
         leaky: float = 1.0,
         connectivity_input: int = 10,
         connectivity_recurrent: int = 10,
+        dt: float = 1.0
     ):
         """Initializes the ReservoirLayer.
 
@@ -158,6 +161,7 @@ class ReservoirLayer(torch.nn.Module):
             leaky,
             connectivity_input,
             connectivity_recurrent,
+            dt = dt,
         )
 
     def init_hidden(self, batch_size: int):
@@ -216,6 +220,7 @@ class DeepReservoir(torch.nn.Module):
         connectivity_recurrent: int = 10,
         connectivity_input: int = 10,
         connectivity_inter: int = 10,
+        dt: float = 1.0,
     ):
         """Initializes the DeepReservoir.
 
@@ -271,6 +276,7 @@ class DeepReservoir(torch.nn.Module):
                 leaky=leaky,
                 connectivity_input=connectivity_input_1,
                 connectivity_recurrent=connectivity_recurrent,
+                dt = dt,
             )
         ]
 
@@ -288,6 +294,7 @@ class DeepReservoir(torch.nn.Module):
                     leaky=leaky,
                     connectivity_input=connectivity_input_others,
                     connectivity_recurrent=connectivity_recurrent,
+                    dt = dt,
                 )
             )
             last_h_size = self.layers_units
