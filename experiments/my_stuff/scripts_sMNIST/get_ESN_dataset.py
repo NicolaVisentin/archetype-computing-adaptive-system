@@ -69,11 +69,12 @@ def forw_dynamics(u, y, alpha, W, V, b):
 # =========================================================
 
 n_hid = 6 # dimension of the hidden state
-architecture_to_test = 'sMNIST_ESN_6hidden' # path of the folder containing trained scaler, model and classifier
-dt = 1.0 # dt of the reservoir (default ESN: 1.0)
-rho = 0.999 # spectral radius of the hidden-to-hidden weight matrix (defaul ESN: 0.999)
+architecture_to_test = 'sMNIST_ESN_6hidden_DT0.02' # path of the folder containing trained scaler, model and classifier
+dt = 0.02 # dt of the reservoir (default ESN: 1.0)
+rho = 0.9 # spectral radius of the hidden-to-hidden weight matrix (defaul ESN: 0.999)
 m = int(1e5) # dataset dimension (number of datapoints and labels)
-y_range = [-0.4, 0.4] # range of positions to sample. To have an idea about the ranges, take a look at test_ESN_model.py
+y_range = [-1, 1] # range of positions to sample. To have an idea about the ranges, take a look at test_ESN_model.py
+leaky = 0.5 # leaky rate (default ESN: 0.001)
 # !!! remember to choose the best model when loading the model, scaler and classifier !!!
 
 # ------------
@@ -97,14 +98,14 @@ u = torch.rand((m, n_inp), device=device)         # m samples u (scalar input in
 y = y_min + (y_max - y_min) * torch.rand((m, n_hid), device=device) # m samples y = [y1, ..., yN]^T. Shape (m, n_hidden)
 
 # Extract saved model parameters
-model_params = torch.load(model_dir/architecture_to_test/f"{architecture_to_test}_model_1.pt", map_location=device)
+model_params = torch.load(model_dir/architecture_to_test/f"{architecture_to_test}_model_3.pt", map_location=device)
 W = model_params["reservoir.0.net.recurrent_kernel"]
 V = model_params["reservoir.0.net.kernel"]
 b = model_params["reservoir.0.net.bias"]
 
 # Compute labels ydd
 start = time.perf_counter()
-yd, ydd = forw_dynamics(u, y, 0.001, W, V, b)
+yd, ydd = forw_dynamics(u, y, leaky, W, V, b)
 end = time.perf_counter()
 print(f'Dataset generated in {(end-start):.6f} s')
 
@@ -126,9 +127,10 @@ model = DeepReservoir(
     tot_units=n_hid,
     input_scaling=1.0,
     spectral_radius=rho,
-    leaky=0.001,
+    leaky=leaky,
     connectivity_recurrent=int((1 - 0.0) * n_hid),
     connectivity_input=n_hid,
+    dt = dt,
 ).to(device)
 
 # Assign saved parameters to the reservoir
