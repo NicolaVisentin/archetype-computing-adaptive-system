@@ -40,10 +40,11 @@ save_results_dir = Path(curr_dir.parent/'results'/curr_dir.stem/Path(__file__).s
 # =========================================================
 
 n_hid = 6 # dimension of the hidden state
-architecture_to_test = 'sMNIST_ESN_6hidden' # path of the folder containing trained scaler, model and classifier
-image_to_test = 0 # if it is an integer i, loads the i-th image from MNIST test set. Otherwise 'black' or 'custom' or 'black_long' or 'random_long'
-dt = 1.0 # dt of the ESN reservoir (default ESN: 1.0)
-rho = 0.999 # spectral radius of the hidden-to-hidden weight matrix (defaul ESN: 0.999)
+architecture_to_test = 'sMNIST_ESN_6hidden_DT0.02' # path of the folder containing trained scaler, model and classifier
+image_to_test = 'random_long' # if it is an integer i, loads the i-th image from MNIST test set. Otherwise 'black' or 'custom' or 'black_long' or 'random_long'
+dt = 0.02 # dt of the ESN reservoir (default ESN: 1.0)
+rho = 0.9 # spectral radius of the hidden-to-hidden weight matrix (defaul ESN: 0.999)
+leaky = 0.5 # leaky factor (default ESN: 0.001)
 # !!! remember to choose the best model when loading the model, scaler and classifier !!!
 
 # ------------
@@ -66,20 +67,20 @@ model = DeepReservoir(
     tot_units=n_hid,
     input_scaling=1.0,
     spectral_radius=rho,
-    leaky=0.001,
+    leaky=leaky,
     connectivity_recurrent=int((1 - 0.0) * n_hid),
     connectivity_input=n_hid,
 ).to(device)
 
 # Load and assign saved parameters to the reservoir (! this assignes only h2h, x2h, bias. Other
 # parameters must be initialized correctly !)
-model_params = torch.load(model_dir/architecture_to_test/f"{architecture_to_test}_model_1.pt", map_location=device)
+model_params = torch.load(model_dir/architecture_to_test/f"{architecture_to_test}_model_3.pt", map_location=device)
 model.load_state_dict(model_params)
 model.eval()
 
 # Load saved scaler and classifier
-scaler = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_scaler_1.pkl")
-classifier = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_classifier_1.pkl")
+scaler = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_scaler_3.pkl")
+classifier = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_classifier_3.pkl")
 
 
 # =========================================================
