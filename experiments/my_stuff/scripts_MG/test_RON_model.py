@@ -82,13 +82,13 @@ model = RandomizedOscillatorsNetwork(
 
 # Load and assign saved parameters to the reservoir (! this assignes only epsilon, gamma, h2h, x2h, bias. Other
 # parameters must be initialized correctly !)
-model_params = torch.load(model_dir/architecture_to_test/f"{architecture_to_test}_model_0.pt", map_location=device)
+model_params = torch.load(model_dir/architecture_to_test/f"{architecture_to_test}_model_1.pt", map_location=device)
 model.load_state_dict(model_params)
 model.eval()
 
 # Load saved scaler and classifier
-scaler = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_scaler_0.pkl")
-classifier = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_classifier_0.pkl")
+scaler = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_scaler_1.pkl")
+classifier = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_classifier_1.pkl")
 
 
 # =========================================================
@@ -96,7 +96,6 @@ classifier = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}
 # =========================================================
 
 # Function to test the trained classifier
-criterion_eval = torch.nn.L1Loss()
 @torch.no_grad()
 def test(dataset, target, classifier, scaler):
     dataset = dataset.reshape(1, -1, 1).to(device)
@@ -106,9 +105,14 @@ def test(dataset, target, classifier, scaler):
     activations = activations.reshape(-1, n_hid) # shape (1, N-Nl-Nw, n_hid) -> (N-Nl-Nw, n_hid)
     activations_scaled = scaler.transform(activations)
     predictions = classifier.predict(activations_scaled) # predicted time sequence. Shape (N-Nl-Nw,)
-    error = criterion_eval(torch.from_numpy(predictions).float(), torch.from_numpy(target.squeeze()).float()).item()
+
+    predictions = torch.from_numpy(predictions).float()
+    target = torch.from_numpy(target.squeeze()).float()
+    rmse = torch.sqrt(torch.mean((predictions - target) ** 2))
+    rms_target = torch.sqrt(torch.mean(target ** 2))
+    nrmse = (rmse / rms_target).item()
     return (
-        error, # nmse(predictions, target)
+        nrmse, # nmrse(predictions, target)
         states_hist[0], # states evolution from k=0 to k=N-Nl-1. Shape (N-Nl, n_hid)
         activations, # states evolutions from k=Nw to k=N-Nl-1. Shape (N-Nl-Nw, n_hid)
         predictions, # predicted time sequence from k=Nw+Nl to k=N-1. Shape (N-Nl-Nw,)
@@ -119,8 +123,8 @@ def test(dataset, target, classifier, scaler):
 _, _, (dataset_sequence, test_target) = get_mackey_glass(csvfolder=dataset_dir, lag=lag, washout=washout)
 
 # Test on test set
-test_nmse, states_histories, activations, prediction, target = test(dataset_sequence, test_target, classifier, scaler)
-print(f'NMSE on the test set: {test_nmse}')
+test_nrmse, states_histories, activations, prediction, target = test(dataset_sequence, test_target, classifier, scaler)
+print(f'NMRSE on the test set: {test_nrmse}')
 
 # Visualize time sequences
 Nw = washout
