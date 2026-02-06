@@ -39,11 +39,11 @@ save_results_dir = Path(curr_dir.parent/'results'/curr_dir.stem/Path(__file__).s
 # Script settings
 # =========================================================
 
-n_hid = 6 # dimension of the hidden state (number of oscillators) (default RON: 1000)
-architecture_to_test = 'MG_RON_full_6hidden_DT0.05_INPSCAL1.0' # path of the folder containing trained scaler, model and classifier
-dt = 0.05 # dt of the RON reservoir (default RON: 0.17)
+n_hid = 1000 # dimension of the hidden state (number of oscillators) (default RON: 1000)
+architecture_to_test = 'MG_RON_full_default' # path of the folder containing trained scaler, model and classifier
+dt = 0.17 # dt of the RON reservoir (default RON: 0.17)
 rho = 0.9 # spectral radius of the hidden-to-hidden weight matrix (defaul RON: 0.9)
-inp_scaling = 1.0 # scaling for the input matrix (default RON: 10.0)
+inp_scaling = 10.0 # scaling for the input matrix (default RON: 10.0)
 lag = 84
 washout = 200
 # !!! remember to choose the best model when loading the model, scaler and classifier !!!
@@ -205,6 +205,27 @@ for i in range(n_hid, len(axs)):
 
 plt.tight_layout()
 plt.savefig(plots_dir/'state_space', bbox_inches='tight')
+#plt.show()
+
+# Show dynamics of the reservoir: y(t) (in separate plots)
+fig, axs = plt.subplots(n_rows, n_cols, figsize=(16, 9))
+if n_hid_show == 1:
+    axs = np.array([axs])
+else:
+    axs = axs.flatten()
+
+for i in range(n_hid_show):
+    axs[i].plot(time[:N-Nl], states_histories[:,i])
+    axs[i].grid(True)
+    axs[i].set_xlabel('t [s]')
+    axs[i].set_ylabel(r'$y_{i+1}$')
+    axs[i].set_title(f'Component {i+1}')
+
+for i in range(n_hid_show, len(axs)):
+    axs[i].set_visible(False)
+
+plt.tight_layout()
+plt.savefig(plots_dir/'y_evoluation', bbox_inches='tight')
 plt.show()
 
 # Save dynamics of the reservoir
