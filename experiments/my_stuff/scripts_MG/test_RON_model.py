@@ -39,11 +39,11 @@ save_results_dir = Path(curr_dir.parent/'results'/curr_dir.stem/Path(__file__).s
 # Script settings
 # =========================================================
 
-n_hid = 1000 # dimension of the hidden state (number of oscillators) (default RON: 1000)
-architecture_to_test = 'MG_RON_full_default' # path of the folder containing trained scaler, model and classifier
-dt = 0.17 # dt of the RON reservoir (default RON: 0.17)
+n_hid = 6 # dimension of the hidden state (number of oscillators) (default RON: 1000)
+architecture_to_test = 'MG_RON_full_6hidden_DT0.05_INPSCAL1.0' # path of the folder containing trained scaler, model and classifier
+dt = 0.05 # dt of the RON reservoir (default RON: 0.17)
 rho = 0.9 # spectral radius of the hidden-to-hidden weight matrix (defaul RON: 0.9)
-inp_scaling = 10.0 # scaling for the input matrix (default RON: 10.0)
+inp_scaling = 1.0 # scaling for the input matrix (default RON: 10.0)
 lag = 84
 washout = 200
 # !!! remember to choose the best model when loading the model, scaler and classifier !!!
@@ -134,13 +134,13 @@ N = len(target) + Nl + Nw
 time = dt * np.arange(0, N)
 full_sequence = np.concatenate([dataset_sequence.numpy(), target[-Nl:]])
 
-plt.figure(figsize=(20,6))
+plt.figure(figsize=(12,3))
 plt.plot(time, full_sequence, 'k--', label='full sequence')
 plt.plot(time[Nw:N-Nl], full_sequence[Nw:N-Nl], 'k', label='test sequence')
 plt.plot(time[Nw+Nl:], prediction, 'r', label='predicted sequence')
 plt.grid(True)
 plt.xlabel('t [s]')
-plt.ylabel('x')
+plt.ylabel('u')
 plt.title('Mackey-Glass')
 plt.legend()
 plt.tight_layout()
