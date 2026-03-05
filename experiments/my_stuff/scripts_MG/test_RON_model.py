@@ -39,11 +39,11 @@ save_results_dir = Path(curr_dir.parent/'results'/curr_dir.stem/Path(__file__).s
 # Script settings
 # =========================================================
 
-n_hid = 6 # dimension of the hidden state (number of oscillators) (default RON: 1000)
-architecture_to_test = 'MG_RON_full_6hidden_DT0.05_INPSCAL1.0' # path of the folder containing trained scaler, model and classifier
-dt = 0.05 # dt of the RON reservoir (default RON: 0.17)
+n_hid = 12 # dimension of the hidden state (number of oscillators) (default RON: 1000)
+architecture_to_test = 'MG_RON_full_12hidden_DT0.15' # path of the folder containing trained scaler, model and classifier
+dt = 0.15 # dt of the RON reservoir (default RON: 0.17)
 rho = 0.9 # spectral radius of the hidden-to-hidden weight matrix (defaul RON: 0.9)
-inp_scaling = 1.0 # scaling for the input matrix (default RON: 10.0)
+inp_scaling = 10.0 # scaling for the input matrix (default RON: 10.0)
 lag = 84
 washout = 200
 # !!! remember to choose the best model when loading the model, scaler and classifier !!!

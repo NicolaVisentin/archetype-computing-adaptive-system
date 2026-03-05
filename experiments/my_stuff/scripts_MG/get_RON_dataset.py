@@ -69,14 +69,14 @@ def forw_dynamics(u, y, yd, gamma, epsilon, W, V, b):
 # Script settings
 # =========================================================
 
-n_hid = 6 # dimension of the hidden state (number of oscillators) (default RON: 1000)
-architecture_to_test = 'MG_RON_full_6hidden_DT0.05_INPSCAL1.0' # path of the folder containing trained scaler, model and classifier
-dt = 0.05 # dt of the RON reservoir (default RON: 0.17)
+n_hid = 12 # dimension of the hidden state (number of oscillators) (default RON: 1000)
+architecture_to_test = 'MG_RON_full_12hidden_DT0.15' # path of the folder containing trained scaler, model and classifier
+dt = 0.15 # dt of the RON reservoir (default RON: 0.17)
 rho = 0.9 # spectral radius (default RON: 0.9)
-inp_scaling = 1.0 # input matrix scaling (default RON: 10.0)
+inp_scaling = 10.0 # input matrix scaling (default RON: 10.0)
 m = int(1e5) # dataset dimension (number of datapoints and labels)
-y_range = [-0.18, 0.08] # range of positions to sample. To have an idea about the ranges, take a look at test_RON_model.py
-yd_range = [-0.2, 0.15] # range of velocities to sample. To have an idea about the ranges, take a look at test_RON_model.py
+y_range = [-0.7, 0.7] # range of positions to sample. To have an idea about the ranges, take a look at test_RON_model.py
+yd_range = [-0.8, 0.8] # range of velocities to sample. To have an idea about the ranges, take a look at test_RON_model.py
 # !!! remember to choose the best model when loading the model, scaler and classifier !!!
 
 # ------------
