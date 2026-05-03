@@ -39,10 +39,10 @@ save_results_dir = Path(curr_dir.parent/'results'/curr_dir.stem/Path(__file__).s
 # Script settings
 # =========================================================
 
-n_hid = 12 # dimension of the hidden state (number of oscillators) (default RON: 1000)
-architecture_to_test = 'MG_RON_full_12hidden_DT0.15' # path of the folder containing trained scaler, model and classifier
-dt = 0.15 # dt of the RON reservoir (default RON: 0.17)
-rho = 0.9 # spectral radius of the hidden-to-hidden weight matrix (defaul RON: 0.9)
+n_hid = 18 # dimension of the hidden state (number of oscillators) (default RON: 1000)
+architecture_to_test = 'MG_RON_full_18hidden_DT0.1_RHO9_INPSCALING10' # path of the folder containing trained scaler, model and classifier
+dt = 0.1 # dt of the RON reservoir (default RON: 0.17)
+rho = 9 # spectral radius of the hidden-to-hidden weight matrix (defaul RON: 0.9)
 inp_scaling = 10.0 # scaling for the input matrix (default RON: 10.0)
 lag = 84
 washout = 200
@@ -82,13 +82,13 @@ model = RandomizedOscillatorsNetwork(
 
 # Load and assign saved parameters to the reservoir (! this assignes only epsilon, gamma, h2h, x2h, bias. Other
 # parameters must be initialized correctly !)
-model_params = torch.load(model_dir/architecture_to_test/f"{architecture_to_test}_model_9.pt", map_location=device)
+model_params = torch.load(model_dir/architecture_to_test/f"{architecture_to_test}_model_17.pt", map_location=device)
 model.load_state_dict(model_params)
 model.eval()
 
 # Load saved scaler and classifier
-scaler = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_scaler_9.pkl")
-classifier = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_classifier_9.pkl")
+scaler = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_scaler_17.pkl")
+classifier = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_classifier_17.pkl")
 
 
 # =========================================================
@@ -147,18 +147,13 @@ plt.tight_layout()
 plt.savefig(plots_dir/'prediction', bbox_inches='tight')
 #plt.show()
 
-# Show dynamics of the reservoir: states, velocities, accelerations and input in time (!! MAX FIRST 15 STATES !!)
-if n_hid > 15:
-    n_hid_show = 15
-else:
-    n_hid_show = n_hid
-
+# Show dynamics of the reservoir: states, velocities, accelerations and input in time
 velocities_histories = np.diff(states_histories, axis=0) / dt # from k=0 to k=N-Nl-1-1. shape (N-Nl-1, n_hid)
 accelerations_histories = np.diff(velocities_histories, axis=0) / dt # from k=0 to k=N-Nl-1-2. shape (N-Nl-2, n_hid)
 input_history = dataset_sequence # from k=0 to k=N-Nl-1. shape (N-Nl,)
 
 fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, figsize=(12,12))
-for i in range(n_hid_show):
+for i in range(n_hid):
     ax1.plot(time[:N-Nl], states_histories[:,i], label=f'y{i+1}(t)')
     ax2.plot(time[:N-Nl-1], velocities_histories[:,i], label=f'yd{i+1}(t)')
     ax3.plot(time[:N-Nl-2], accelerations_histories[:,i], label=f'ydd{i+1}(t)')
@@ -174,14 +169,20 @@ ax1.set_title('Hidden states positions')
 ax2.set_title('Hidden states velocities')
 ax3.set_title('Hidden states accelerations')
 ax4.set_title('Input')
-ax1.legend(loc='upper left', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
-ax2.legend(loc='upper left', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
-ax3.legend(loc='upper left', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+if n_hid < 16:
+    ax1.legend(loc='upper left', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+    ax2.legend(loc='upper left', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+    ax3.legend(loc='upper left', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
 plt.tight_layout()
 plt.savefig(plots_dir/'states_evolution', bbox_inches='tight')
 #plt.show()
 
-# Show dynamics of the reservoir: (y, yd) in y,yd plane
+# Show dynamics of the reservoir: (y, yd) in y,yd plane (!! MAX FIRST 15 STATES !!)
+if n_hid > 15:
+    n_hid_show = 15
+else:
+    n_hid_show = n_hid
+
 n_cols = min(3, n_hid_show)
 n_rows = int(np.ceil(n_hid_show / n_cols))
 
@@ -207,7 +208,7 @@ plt.tight_layout()
 plt.savefig(plots_dir/'state_space', bbox_inches='tight')
 #plt.show()
 
-# Show dynamics of the reservoir: y(t) (in separate plots)
+# Show dynamics of the reservoir: y(t) (in separate plots, !! MAX FIRST 15 STATES !!)
 fig, axs = plt.subplots(n_rows, n_cols, figsize=(16, 9))
 if n_hid_show == 1:
     axs = np.array([axs])
@@ -225,7 +226,7 @@ for i in range(n_hid_show, len(axs)):
     axs[i].set_visible(False)
 
 plt.tight_layout()
-plt.savefig(plots_dir/'y_evoluation', bbox_inches='tight')
+plt.savefig(plots_dir/'y_evolution', bbox_inches='tight')
 plt.show()
 
 # Save dynamics of the reservoir
