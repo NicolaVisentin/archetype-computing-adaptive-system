@@ -69,13 +69,13 @@ def forw_dynamics(u, y, yd, gamma, epsilon, W, V, b):
 # Script settings
 # =========================================================
 
-n_hid = 12 # dimension of the hidden state (number of oscillators)
-architecture_to_test = 'sMNIST_RON_full_12hidden_DT0.006_RHO0.99' # path of the folder containing trained scaler, model and classifier
-dt = 0.006 # dt of the RON reservoir (default RON: 0.042)
-rho = 0.99 # spectral radius of the hidden-to-hidden weight matrix (defaul RON: 9)
+n_hid = 15 # dimension of the hidden state (number of oscillators)
+architecture_to_test = 'sMNIST_RON_full_15hidden' # path of the folder containing trained scaler, model and classifier
+dt = 0.01 # dt of the RON reservoir (default RON: 0.042)
+rho = 9.0 # spectral radius of the hidden-to-hidden weight matrix (defaul RON: 9)
 m = int(1e5) # dataset dimension (number of datapoints and labels)
-y_range = [-1, 1] # range of positions to sample. To have an idea about the ranges, take a look at test_RON_model.py
-yd_range = [-1, 1] # range of velocities to sample. To have an idea about the ranges, take a look at test_RON_model.py
+y_range = [-2.5, 2.5] # range of positions to sample. To have an idea about the ranges, take a look at test_RON_model.py
+yd_range = [-3.5, 3.5] # range of velocities to sample. To have an idea about the ranges, take a look at test_RON_model.py
 # !!! remember to choose the best model when loading the model, scaler and classifier !!!
 
 # ------------
@@ -102,7 +102,7 @@ y = y_min + (y_max - y_min) * torch.rand((m, n_hid), device=device) # m samples 
 yd = yd_min + (yd_max - yd_min) * torch.rand((m, n_hid), device=device) # m samples yd = [yd1, ..., ydN]^T. Shape (m, n_hidden)
 
 # Extract saved model parameters
-model_params = torch.load(model_dir/architecture_to_test/f"{architecture_to_test}_model_1.pt", map_location=device)
+model_params = torch.load(model_dir/architecture_to_test/f"{architecture_to_test}_model_4.pt", map_location=device)
 gamma = model_params["gamma"]
 epsilon= model_params["epsilon"]
 W = model_params["h2h"]

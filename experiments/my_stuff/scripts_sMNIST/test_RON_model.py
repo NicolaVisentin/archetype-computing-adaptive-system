@@ -39,11 +39,11 @@ save_results_dir = Path(curr_dir.parent/'results'/curr_dir.stem/Path(__file__).s
 # Script settings
 # =========================================================
 
-n_hid = 12 # dimension of the hidden state (number of oscillators)
-architecture_to_test = 'sMNIST_RON_full_12hidden_DT0.006_RHO0.99' # path of the folder containing trained scaler, model and classifier
-image_to_test = 0 # if it is an integer i, loads the i-th image from MNIST test set. Otherwise 'black' or 'custom' or 'black_long' or 'random_long'
-dt = 0.006 # dt of the RON reservoir (default RON: 0.042)
-rho = 0.99 # spectral radius of the hidden-to-hidden weight matrix (defaul RON: 9)
+n_hid = 15 # dimension of the hidden state (number of oscillators)
+architecture_to_test = 'sMNIST_RON_full_15hidden' # path of the folder containing trained scaler, model and classifier
+image_to_test = 'random_long' # if it is an integer i, loads the i-th image from MNIST test set. Otherwise 'black' or 'custom' or 'black_long' or 'random_long'
+dt = 0.01 # dt of the RON reservoir (default RON: 0.042)
+rho = 9.0 # spectral radius of the hidden-to-hidden weight matrix (defaul RON: 9)
 # !!! remember to choose the best model when loading the model, scaler and classifier !!!
 
 # ------------
@@ -80,13 +80,13 @@ model = RandomizedOscillatorsNetwork(
 
 # Load and assign saved parameters to the reservoir (! this assignes only epsilon, gamma, h2h, x2h, bias. Other
 # parameters must be initialized correctly !)
-model_params = torch.load(model_dir/architecture_to_test/f"{architecture_to_test}_model_1.pt", map_location=device)
+model_params = torch.load(model_dir/architecture_to_test/f"{architecture_to_test}_model_4.pt", map_location=device)
 model.load_state_dict(model_params)
 model.eval()
 
 # Load saved scaler and classifier
-scaler = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_scaler_1.pkl")
-classifier = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_classifier_1.pkl")
+scaler = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_scaler_4.pkl")
+classifier = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_classifier_4.pkl")
 
 
 # =========================================================

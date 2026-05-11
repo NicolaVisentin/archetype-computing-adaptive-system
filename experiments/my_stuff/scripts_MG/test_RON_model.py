@@ -39,10 +39,10 @@ save_results_dir = Path(curr_dir.parent/'results'/curr_dir.stem/Path(__file__).s
 # Script settings
 # =========================================================
 
-n_hid = 16 # dimension of the hidden state (number of oscillators) (default RON: 1000)
-architecture_to_test = 'MG_RON_full_16hidden_DT0.15_RHO4' # path of the folder containing trained scaler, model and classifier
-dt = 0.15 # dt of the RON reservoir (default RON: 0.17)
-rho = 4 # spectral radius of the hidden-to-hidden weight matrix (defaul RON: 0.9)
+n_hid = 18 # dimension of the hidden state (number of oscillators) (default RON: 1000)
+architecture_to_test = 'MG_RON_full_18hidden' # path of the folder containing trained scaler, model and classifier
+dt = 0.1 # dt of the RON reservoir (default RON: 0.17)
+rho = 9.0 # spectral radius of the hidden-to-hidden weight matrix (defaul RON: 0.9)
 inp_scaling = 10.0 # scaling for the input matrix (default RON: 10.0)
 lag = 84
 washout = 200
@@ -82,13 +82,13 @@ model = RandomizedOscillatorsNetwork(
 
 # Load and assign saved parameters to the reservoir (! this assignes only epsilon, gamma, h2h, x2h, bias. Other
 # parameters must be initialized correctly !)
-model_params = torch.load(model_dir/architecture_to_test/f"{architecture_to_test}_model_5.pt", map_location=device)
+model_params = torch.load(model_dir/architecture_to_test/f"{architecture_to_test}_model_17.pt", map_location=device)
 model.load_state_dict(model_params)
 model.eval()
 
 # Load saved scaler and classifier
-scaler = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_scaler_5.pkl")
-classifier = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_classifier_5.pkl")
+scaler = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_scaler_17.pkl")
+classifier = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_classifier_17.pkl")
 
 
 # =========================================================
