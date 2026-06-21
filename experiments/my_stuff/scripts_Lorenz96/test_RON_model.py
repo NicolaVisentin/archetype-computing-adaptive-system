@@ -30,10 +30,10 @@ save_results_dir = Path(curr_dir.parent/'results'/curr_dir.stem/Path(__file__).s
 
 n_hid = 6 # dimension of the hidden state (number of oscillators)
 architecture_to_test = 'lorenz_RON_full_6hidden' # path of the folder containing trained scaler, model and classifier
-dt = 0.17 # dt of the RON reservoir (default RON: 0.17 s)
+dt = 0.05 # dt of the RON reservoir (default RON: 0.17 s)
 rho = 0.99 # spectral radius of the hidden-to-hidden weight matrix (defaul RON: 0.99)
-inp_scaling = 0.1 # scaling for the input matrix (default RON: 0.1)
-lag = 1
+inp_scaling = 0.01 # scaling for the input matrix (default RON: 0.1)
+lag = 25
 washout = 200
 # !!! remember to choose the best model when loading the model, scaler and predictor !!!
 
@@ -67,13 +67,13 @@ model = RandomizedOscillatorsNetwork(
 
 # Load and assign saved parameters to the reservoir (! this assignes only epsilon, gamma, h2h, x2h, bias. Other
 # parameters must be initialized correctly !)
-model_params = torch.load(model_dir/architecture_to_test/f"{architecture_to_test}_model_0.pt", map_location=device)
+model_params = torch.load(model_dir/architecture_to_test/f"{architecture_to_test}_model_6.pt", map_location=device)
 model.load_state_dict(model_params)
 model.eval()
 
 # Load saved scaler and predictor
-scaler = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_scaler_0.pkl")
-predictor = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_predictor_0.pkl")
+scaler = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_scaler_6.pkl")
+predictor = joblib.load(model_dir/architecture_to_test/f"{architecture_to_test}_predictor_6.pkl")
 
 
 # =========================================================
