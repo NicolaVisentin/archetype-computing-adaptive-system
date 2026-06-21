@@ -2,22 +2,22 @@ import torch
 import numpy as np
 from scipy.integrate import odeint
 
-def get_lorenz(N, F, num_batch=128, lag=25, washout=200, window_size=0):
+def get_lorenz(dim, F, num_batch=128, lag=25, washout=200, window_size=0):
     # https://en.wikipedia.org/wiki/Lorenz_96_model
     def L96(x, t):
         """Lorenz 96 model with constant forcing"""
         # Setting up vector
-        d = np.zeros(N)
+        d = np.zeros(dim)
         # Loops over indices (with operations and Python underflow indexing handling edge cases)
-        for i in range(N):
-            d[i] = (x[(i + 1) % N] - x[i - 2]) * x[i - 1] - x[i] + F
+        for i in range(dim):
+            d[i] = (x[(i + 1) % dim] - x[i - 2]) * x[i - 1] - x[i] + F
         return d
 
     dt = 0.01
     t = np.arange(0.0, 20+(lag*dt)+(washout*dt), dt) # from t=0 to t=20 s + lag + whashout; from k=0 to k=N-1
     dataset = []
     for i in range(num_batch):
-        x0 = np.random.rand(N) + F - 0.5 # [F-0.5, F+0.5]
+        x0 = np.random.rand(dim) + F - 0.5 # [F-0.5, F+0.5]
         x = odeint(L96, x0, t)
         dataset.append(x)
     dataset = np.stack(dataset, axis=0)
