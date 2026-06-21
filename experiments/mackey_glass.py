@@ -114,10 +114,10 @@ epsilon = (args.epsilon - args.epsilon_range / 2.0,
 # Function to test the trained classifier
 @torch.no_grad()
 def test(dataset, target, classifier, scaler):
-    dataset = dataset.reshape(1, -1, 1).to(device)
-    target = target.reshape(-1, 1).numpy()
-    activations = model(dataset)[0].cpu().numpy()
-    activations = activations[:, washout:]
+    dataset = dataset.reshape(1, -1, 1).to(device) # datapoints, from k=0 to k=N-Nl-1
+    target = target.reshape(-1, 1).numpy() # from k=Nw+Nl to k=N-1
+    out = model(dataset)[0].cpu().numpy() # reservoir response from k=0 to k=N-Nl-1
+    activations = out[:, washout:] # activations, from k=Nw to k=N-Nl-1
     activations = activations.reshape(-1, args.n_hid)
     activations = scaler.transform(activations)
     predictions = classifier.predict(activations)
@@ -215,8 +215,8 @@ for i in tqdm(range(args.trials), 'Trials', leave=False):
         (test_dataset, test_target),
     ) = get_mackey_glass(csvfolder=args.dataroot, lag=args.lag, washout=washout)
 
-    train_sequence = train_dataset.reshape(1, -1, 1).to(device) # shape (N-Nl,) -> (1, N-Nl, 1)
-    target = train_target.reshape(-1, 1).numpy() # shape (N-Nl-Nw,) -> (N-Nl-Nw, 1)
+    train_sequence = train_dataset.reshape(1, -1, 1).to(device) # shape (N-Nl,) -> (1, N-Nl, 1) = (batch, steps, dim)
+    target = train_target.reshape(-1, 1).numpy() # shape (N-Nl-Nw,) -> (N-Nl-Nw, 1) = (steps, dim)
 
     # Train the output layer (1): pass the train input sequence to the model
     print('\nGenerating activations for training...')
@@ -236,6 +236,7 @@ for i in tqdm(range(args.trials), 'Trials', leave=False):
     train_nrmse = test(train_dataset, train_target, classifier, scaler) # on the train set
     valid_nrmse = test(valid_dataset, valid_target, classifier, scaler) if not args.use_test else 0.0 # on the validation set
     test_nrmse = test(test_dataset, test_target, classifier, scaler) if args.use_test else 0.0 # on the test set
+    
     train_nrmse_list.append(train_nrmse)
     valid_nrmse_list.append(valid_nrmse)
     test_nrmse_list.append(test_nrmse)
@@ -248,14 +249,14 @@ for i in tqdm(range(args.trials), 'Trials', leave=False):
         scaler_path = os.path.join(save_dir, f"MG_{netw}_{args.topology}{suffix}_scaler_{i}.pkl")
         joblib.dump(scaler, scaler_path) # save scaler
         classifier_path = os.path.join(save_dir, f"MG_{netw}_{args.topology}{suffix}_classifier_{i}.pkl")
-        joblib.dump(classifier, classifier_path) # save classifier
+        joblib.dump(classifier, classifier_path) # save predictor (output layer)
     else:
         model_path = os.path.join(save_dir, f"MG_{netw}{suffix}_model_{i}.pt")
         torch.save(model.state_dict(), model_path) # save reservoir
         scaler_path = os.path.join(save_dir, f"MG_{netw}{suffix}_scaler_{i}.pkl")
         joblib.dump(scaler, scaler_path) # save scaler
         classifier_path = os.path.join(save_dir, f"MG_{netw}{suffix}_classifier_{i}.pkl")
-        joblib.dump(classifier, classifier_path) # save classifier
+        joblib.dump(classifier, classifier_path) # save predictor (output layer)
     print()
 
 # Save results
