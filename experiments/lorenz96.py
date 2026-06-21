@@ -22,13 +22,13 @@ parser.add_argument("--resultroot", type=str, default='experiments/my_stuff/trai
 #   suffix to add to results file
 parser.add_argument("--resultsuffix", type=str, default="", help="suffix to append to the result file name")
 #   number of hidden unities in the net
-parser.add_argument('--n_hid', type=int, default=256, help='hidden size of recurrent net')
+parser.add_argument('--n_hid', type=int, default=6800, help='hidden size of recurrent net')
 #   prediction lag
-parser.add_argument("--lag", type=int, default=1, help="prediction lag")
+parser.add_argument("--lag", type=int, default=25, help="prediction lag")
 #   force use cpu
 parser.add_argument("--cpu", action="store_true")
 #   input scaling (max abs value of the input-reservoir connection weights)
-parser.add_argument("--inp_scaling", type=float, default=1.0, help="ESN input scaling")
+parser.add_argument("--inp_scaling", type=float, default=0.1, help="ESN input scaling")
 #   using test set for evaluating the trained model
 parser.add_argument("--use_test", action="store_true")
 #   number of trials (how many times we want to run the experiment)
@@ -36,21 +36,17 @@ parser.add_argument("--trials", type=int, default=1, help="How many times to run
 
 # PARAMETERS FOR ALL RONs MODELS:
 #   temporal discretization step (dt)
-parser.add_argument("--dt", type=float, default=0.076, help="step size <dt> of the coRNN")
+parser.add_argument("--dt", type=float, default=0.17, help="step size <dt> of the coRNN")
 #   stiffness (gamma)
-parser.add_argument("--gamma", type=float, default=0.4, help="y controle parameter <gamma> of the coRNN")
-parser.add_argument("--gamma_range", type=float, default=2.7, help="y controle parameter <gamma> of the coRNN")
+parser.add_argument("--gamma", type=float, default=10.0, help="y controle parameter <gamma> of the coRNN")
+parser.add_argument("--gamma_range", type=float, default=1.0, help="y controle parameter <gamma> of the coRNN")
 #   damping (epsilon)
-parser.add_argument("--epsilon", type=float, default=8.0, help="z controle parameter <epsilon> of the coRNN")
-parser.add_argument("--epsilon_range", type=float, default=4.7, help="z controle parameter <epsilon> of the coRNN")
-
-# PARAMETERS FOR ESN MODEL:
-#   leaky factor
-parser.add_argument("--leaky", type=float, default=1.0)
+parser.add_argument("--epsilon", type=float, default=10.0, help="z controle parameter <epsilon> of the coRNN")
+parser.add_argument("--epsilon_range", type=float, default=0.5, help="z controle parameter <epsilon> of the coRNN")
 
 # OTHER SPECIFIC PARAMETERS
 #   spectral radius (max abs eigenvalue of the recurrent matrix). For ESN and pure RON
-parser.add_argument("--rho", type=float, default=0.99, help="ESN spectral radius")
+parser.add_argument("--rho", type=float, default=0.99, help="spectral radius")
 
 
 args = parser.parse_args()
@@ -121,9 +117,9 @@ for i in tqdm(range(args.trials), 'Trials', leave=False):
 
     # Build datasets
     print('\nBuilding datasets...')
-    train_dataset = get_lorenz(N=n_inp, F=8, lag=lag, washout=washout) # from k=0 to k=N-1. Shape (B, N, n_inp)
-    valid_dataset = get_lorenz(N=n_inp, F=8, lag=lag, washout=washout) # from k=0 to k=N-1. Shape (B, N, n_inp)
-    test_dataset = get_lorenz(N=n_inp, F=8, lag=lag, washout=washout) # from k=0 to k=N-1. Shape (B, N, n_inp)
+    train_dataset = get_lorenz(dim=n_inp, num_batch=128, F=8, lag=lag, washout=washout) # from k=0 to k=N-1. Shape (B, N, n_inp)
+    valid_dataset = get_lorenz(dim=n_inp, num_batch=128, F=8, lag=lag, washout=washout) # from k=0 to k=N-1. Shape (B, N, n_inp)
+    test_dataset = get_lorenz(dim=n_inp, num_batch=128, F=8, lag=lag, washout=washout) # from k=0 to k=N-1. Shape (B, N, n_inp)
 
     train_sequence = train_dataset[:, :-lag].to(device) # from k=0 to k=N-Nl-1. Shape (B, N-Nl, n_inp)
     target = train_dataset[:, (lag+washout):].numpy() # from k=Nw+Nl to k=N-1. Shape (B, N-Nw-Nl, n_inp)
@@ -131,7 +127,8 @@ for i in tqdm(range(args.trials), 'Trials', leave=False):
 
     # Train the output layer (1): pass the train input sequence to the model
     print('\nGenerating activations for training...')
-    out = model(train_sequence) # forward method gives a tuple with 2 elements...
+    with torch.no_grad():
+        out = model(train_sequence) # forward method gives a tuple with 2 elements...
     out = out[0].cpu().numpy() # ...we only want the first one, which is a (B, N-Nl, n_hid) array. It's the reservoir's states evolution from k=0 to k=N-Nl-1
     activations = out[:, washout:] # remove the initial washout steps. Shape (B, N-Nl-Nw, n_hid). It's the reservoir's states evolution from k=Nw to k=N-Nl-1
     activations = activations.reshape(-1, args.n_hid) # shape (B, N-Nl-Nw, n_hid) -> (B*(N-Nl-Nw), n_hid)
