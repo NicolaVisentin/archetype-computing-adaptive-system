@@ -229,5 +229,5 @@ np.savez(
     y = states_histories[:-2], 
     yd = velocities_histories[:-1], 
     ydd = accelerations_histories[:],
-    u = input_history[:-2, None]
+    u = input_history[:-2]
 )
