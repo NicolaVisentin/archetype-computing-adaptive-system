@@ -29,7 +29,7 @@ save_results_dir = Path(curr_dir.parent/'results'/curr_dir.stem/Path(__file__).s
 # =========================================================
 
 n_hid = 6 # dimension of the hidden state (number of oscillators)
-architecture_to_test = 'lorenz_RON_full_6hidden' # path of the folder containing trained scaler, model and classifier
+architecture_to_test = 'lorenz_RON_full_6hidden' # path of the folder containing trained scaler, model and predictor
 dt = 0.05 # dt of the RON reservoir (default RON: 0.17 s)
 rho = 0.99 # spectral radius of the hidden-to-hidden weight matrix (defaul RON: 0.99)
 inp_scaling = 0.01 # scaling for the input matrix (default RON: 0.1)
