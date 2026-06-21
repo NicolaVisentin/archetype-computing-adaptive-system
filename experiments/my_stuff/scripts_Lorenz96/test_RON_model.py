@@ -30,9 +30,9 @@ save_results_dir = Path(curr_dir.parent/'results'/curr_dir.stem/Path(__file__).s
 
 n_hid = 6 # dimension of the hidden state (number of oscillators)
 architecture_to_test = 'lorenz_RON_full_6hidden' # path of the folder containing trained scaler, model and classifier
-dt = 0.076 # dt of the RON reservoir (default RON: 0.076 s)
+dt = 0.17 # dt of the RON reservoir (default RON: 0.17 s)
 rho = 0.99 # spectral radius of the hidden-to-hidden weight matrix (defaul RON: 0.99)
-inp_scaling = 1.0 # scaling for the input matrix (default RON: 1.0)
+inp_scaling = 0.1 # scaling for the input matrix (default RON: 0.1)
 lag = 1
 washout = 200
 # !!! remember to choose the best model when loading the model, scaler and predictor !!!
@@ -110,7 +110,7 @@ def test(dataset, predictor, scaler):
     )
 
 # Build test dataset
-dataset = get_lorenz(N=5, F=8, lag=lag, washout=washout) # from k=0 to k=N-1. Shape (B, N, n_inp)
+dataset = get_lorenz(dim=5, F=8, lag=lag, washout=washout) # from k=0 to k=N-1. Shape (B, N, n_inp)
 
 # Test on test set
 test_nrmse, states_histories, activations, predictions, targets = test(dataset, predictor, scaler)
