@@ -79,11 +79,11 @@ epsilon = (args.epsilon - args.epsilon_range / 2., args.epsilon + args.epsilon_r
 # Function to test the trained classifier
 @torch.no_grad()
 def test(dataset, classifier, scaler):
-    target = dataset[:, (lag+washout):].numpy().reshape(-1, 5) # from k=Nw+Nl to k=N-1
-    dataset = dataset[:, :(2000+washout)].to(device) # datapoints, from k=0 to k=N-Nl-1
-    out = model(dataset)[0].cpu().numpy() # reservoir response from k=0 to k=N-Nl-1
-    activations = out[:, washout:] # activations, from k=Nw to k=N-Nl-1
-    activations = activations.reshape(-1, args.n_hid)
+    target = dataset[:, (lag+washout):].numpy().reshape(-1, n_inp) # from k=Nw+Nl to k=N-1. Shape (B*(N-Nw-Nl), n_inp)
+    datapoints = dataset[:, :(2000+washout)].to(device) # datapoints, from k=0 to k=N-Nl-1. Shape (B, N-Nl, n_inp)
+    out = model(datapoints)[0].cpu().numpy() # reservoir response from k=0 to k=N-Nl-1. Shape (B, N-Nl, n_hid)
+    activations = out[:, washout:] # activations, from k=Nw to k=N-Nl-1. Shape (B, N-Nw-Nl, n_hid)
+    activations = activations.reshape(-1, args.n_hid) # shape (B, N-Nw-Nl, n_hid) -> (B*(N-Nw-Nl), n_hid)
     activations = scaler.transform(activations)
     predictions = classifier.predict(activations)
     mse = np.mean(np.square(predictions - target))
@@ -121,13 +121,13 @@ for i in tqdm(range(args.trials), 'Trials', leave=False):
 
     # Build datasets
     print('\nBuilding datasets...')
-    train_dataset = get_lorenz(N=5, F=8, lag=lag, washout=washout) # from k=0 to k=N-1. Shape (B, N, n_inp)
-    valid_dataset = get_lorenz(N=5, F=8, lag=lag, washout=washout) # from k=0 to k=N-1. Shape (B, N, n_inp)
-    test_dataset = get_lorenz(N=5, F=8, lag=lag, washout=washout) # from k=0 to k=N-1. Shape (B, N, n_inp)
+    train_dataset = get_lorenz(N=n_inp, F=8, lag=lag, washout=washout) # from k=0 to k=N-1. Shape (B, N, n_inp)
+    valid_dataset = get_lorenz(N=n_inp, F=8, lag=lag, washout=washout) # from k=0 to k=N-1. Shape (B, N, n_inp)
+    test_dataset = get_lorenz(N=n_inp, F=8, lag=lag, washout=washout) # from k=0 to k=N-1. Shape (B, N, n_inp)
 
     train_sequence = train_dataset[:, :-lag].to(device) # from k=0 to k=N-Nl-1. Shape (B, N-Nl, n_inp)
     target = train_dataset[:, (lag+washout):].numpy() # from k=Nw+Nl to k=N-1. Shape (B, N-Nw-Nl, n_inp)
-    target = target.reshape(-1, 5) # shape (B, N-Nw-Nl, n_inp) -> (B*(N-Nw-Nl), n_inp). Merge the first 2 dimensions (batches and timesteps)
+    target = target.reshape(-1, n_inp) # shape (B, N-Nw-Nl, n_inp) -> (B*(N-Nw-Nl), n_inp). Merge the first 2 dimensions (batches and timesteps)
 
     # Train the output layer (1): pass the train input sequence to the model
     print('\nGenerating activations for training...')
@@ -135,7 +135,6 @@ for i in tqdm(range(args.trials), 'Trials', leave=False):
     out = out[0].cpu().numpy() # ...we only want the first one, which is a (B, N-Nl, n_hid) array. It's the reservoir's states evolution from k=0 to k=N-Nl-1
     activations = out[:, washout:] # remove the initial washout steps. Shape (B, N-Nl-Nw, n_hid). It's the reservoir's states evolution from k=Nw to k=N-Nl-1
     activations = activations.reshape(-1, args.n_hid) # shape (B, N-Nl-Nw, n_hid) -> (B*(N-Nl-Nw), n_hid)
-    print(activations.shape)
     
     # Train the output layer (2): logistic regression of the output layer
     print('\nTraining the output layer (regression)...')
