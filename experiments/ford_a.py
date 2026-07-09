@@ -69,7 +69,7 @@ def test(data_loader, classifier, scaler):
 
     activations = torch.cat(activations, dim=0).numpy() # shape (test_size, num_hidden_units)
     activations = scaler.transform(activations)
-    ys = torch.cat(ys, dim=0).numpy()
+    ys = torch.cat(ys, dim=0).numpy().ravel()
 
     return classifier.score(activations, ys)
 
