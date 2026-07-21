@@ -96,7 +96,7 @@ epsilon = (args.epsilon - args.epsilon_range / 2.0,
 # Create folder for saving the trained networks
 netw = 'RON'
 suffix = f"_{args.resultsuffix}" if args.resultsuffix else ""
-save_dir = os.path.join(args.resultroot, f'FordA{netw}_full{suffix}')
+save_dir = os.path.join(args.resultroot, f'FordA_{netw}_full{suffix}')
 os.makedirs(save_dir, exist_ok=True)  # create folder if not there already
 
 # Iterations
