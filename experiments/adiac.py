@@ -7,7 +7,7 @@ from sklearn.linear_model import LogisticRegression
 from tqdm import tqdm
 import joblib
 
-from acds.archetypes import RandomizedOscillatorsNetwork
+from acds.archetypes import RandomizedOscillatorsNetwork, DeepReservoir
 from acds.benchmarks import get_adiac_data
 
 
@@ -33,20 +33,37 @@ parser.add_argument("--use_test", action="store_true")
 parser.add_argument("--trials", type=int, default=1, help="How many times to run the experiment")
 #   force use cpu
 parser.add_argument("--cpu", action="store_true")
+#   model choice
+parser.add_argument("--esn", action="store_true")
+parser.add_argument("--ron", action="store_true")
 
 # PARAMETERS FOR THE RON:
-#   temporal discretization step (dt)
-parser.add_argument("--dt", type=float, default=0.01, help="step size <dt> of the coRNN")
 #   stiffness (gamma)
 parser.add_argument("--gamma", type=float, default=3.0, help="y controle parameter <gamma> of the coRNN")
 parser.add_argument("--gamma_range", type=float, default=1.0, help="y controle parameter <gamma> of the coRNN")
 #   damping (epsilon)
 parser.add_argument("--epsilon", type=float, default=5.0, help="z controle parameter <epsilon> of the coRNN")
 parser.add_argument("--epsilon_range", type=float, default=0.5, help="z controle parameter <epsilon> of the coRNN")
+
+# PARAMETERS FOR ESN MODEL:
+#   leaky factor
+parser.add_argument("--leaky", type=float, default=0.0001)
+
+# OTHER PARAMETERS
+#   temporal discretization step (dt)
+parser.add_argument("--dt", type=float, default=0.01, help="step size <dt> of the coRNN")
 #   input scaling (max abs value of the input-reservoir connection weights)
 parser.add_argument("--inp_scaling", type=float, default=10.0, help="RON input scaling")
 #   spectral radius (max abs eigenvalue of the recurrent matrix).
 parser.add_argument("--rho", type=float, default=9.0, help="ESN spectral radius")
+#   topology of the reservoir (and scaling factor for ring/band/toeplitz cases). For pure RON
+parser.add_argument("--topology", 
+                    type=str, 
+                    default="full", 
+                    choices=["full", "ring", "band", "lower", "toeplitz", "orthogonal", "antisymmetric"], 
+                    help="Topology of the reservoir")
+#   sparsity of the connections in the reservoir (0: fully connected; 1: everything unconnected). For ESN and pure RON
+parser.add_argument("--sparsity", type=float, default=0.0, help="Sparsity of the reservoir")
 
 
 args = parser.parse_args()
@@ -95,9 +112,19 @@ epsilon = (args.epsilon - args.epsilon_range / 2.0,
 # =========================================================
 
 # Create folder for saving the trained networks
-netw = 'RON'
+if args.ron:
+    netw = 'RON'
+elif args.esn:
+    netw = 'ESN'
+else:
+    raise ValueError("Wrong model choice.")
+
 suffix = f"_{args.resultsuffix}" if args.resultsuffix else ""
-save_dir = os.path.join(args.resultroot, f'Adiac_{netw}_full{suffix}')
+if args.ron:
+    save_dir = os.path.join(args.resultroot, f'Adiac_{netw}_{args.topology}{suffix}')
+else:
+    save_dir = os.path.join(args.resultroot, f'Adiac_{netw}{suffix}')
+    
 os.makedirs(save_dir, exist_ok=True)  # create folder if not there already
 
 # Iterations
@@ -105,16 +132,29 @@ train_accs, valid_accs, test_accs = [], [], []
 for i in tqdm(range(args.trials), 'Trials', leave=False):
     # Initialize the model
     print('\nInitializing the model...')
-    model = RandomizedOscillatorsNetwork(
-        n_inp = n_inp,
-        n_hid = args.n_hid,
-        dt = args.dt,
-        gamma = gamma,
-        epsilon = epsilon,
-        rho = args.rho,
-        input_scaling = args.inp_scaling,
-        device=device,
-    ).to(device)
+    if args.ron:
+        model = RandomizedOscillatorsNetwork(
+            n_inp = n_inp,
+            n_hid = args.n_hid,
+            dt = args.dt,
+            gamma = gamma,
+            epsilon = epsilon,
+            rho = args.rho,
+            input_scaling = args.inp_scaling,
+            topology = args.topology,
+            device=device,
+        ).to(device)
+    elif args.esn:
+        model = DeepReservoir(
+            input_size=n_inp,
+            tot_units=args.n_hid,
+            input_scaling=args.inp_scaling,
+            spectral_radius=args.rho,
+            leaky=args.leaky,
+            connectivity_recurrent=int((1 - args.sparsity) * args.n_hid),
+            connectivity_input=args.n_hid,
+            dt = args.dt,
+        ).to(device)
     
     # Build dataloaders
     print('\nBuilding datasets...')
@@ -159,25 +199,36 @@ for i in tqdm(range(args.trials), 'Trials', leave=False):
 
     # Save the trained network
     print('\nSaving trained network...')
-    model_path = os.path.join(save_dir, f"Adiac_{netw}_full{suffix}_model_{i}.pt")
-    torch.save(model.state_dict(), model_path) # save reservoir random parameters (epsilon, gamma, h2h, x2h, bias)
-    scaler_path = os.path.join(save_dir, f"Adiac_{netw}_full{suffix}_scaler_{i}.pkl")
-    joblib.dump(scaler, scaler_path) # save scaler
-    classifier_path = os.path.join(save_dir, f"Adiac_{netw}_full{suffix}_classifier_{i}.pkl")
-    joblib.dump(classifier, classifier_path) # save classifier
+    if args.ron:
+        model_path = os.path.join(save_dir, f"Adiac_{netw}_{args.topology}{suffix}_model_{i}.pt")
+        torch.save(model.state_dict(), model_path) # save reservoir random parameters (epsilon, gamma, h2h, x2h, bias)
+        scaler_path = os.path.join(save_dir, f"Adiac_{netw}_{args.topology}{suffix}_scaler_{i}.pkl")
+        joblib.dump(scaler, scaler_path) # save scaler
+        classifier_path = os.path.join(save_dir, f"Adiac_{netw}_{args.topology}{suffix}_classifier_{i}.pkl")
+        joblib.dump(classifier, classifier_path) # save classifier
+    else:
+        model_path = os.path.join(save_dir, f"Adiac_{netw}{suffix}_model_{i}.pt")
+        torch.save(model.state_dict(), model_path) # save reservoir
+        scaler_path = os.path.join(save_dir, f"Adiac_{netw}{suffix}_scaler_{i}.pkl")
+        joblib.dump(scaler, scaler_path) # save scaler
+        classifier_path = os.path.join(save_dir, f"Adiac_{netw}{suffix}_classifier_{i}.pkl")
+        joblib.dump(classifier, classifier_path) # save classifier
     print()
 
 # Save results
 print('Saving results...')
-f = open(os.path.join(save_dir, f"Adiac_log_{netw}_full{suffix}.txt"), "a")
+if args.ron:
+    f = open(os.path.join(save_dir, f"Adiac_log_{netw}_{args.topology}{suffix}.txt"), "a")
+else:
+    f = open(os.path.join(save_dir, f"Adiac_log_{netw}{suffix}.txt"), "a")
 
 ar = ""
 for k, v in vars(args).items():
     ar += f"{str(k)}: {str(v)}, "
 ar += (
-    f"train: {[str(round(train_acc, 2)) for train_acc in train_accs]} "
-    f"valid: {[str(round(valid_acc, 2)) for valid_acc in valid_accs]} "
-    f"test: {[str(round(test_acc, 2)) for test_acc in test_accs]}"
+    f"train: {[str(round(train_acc, 3)) for train_acc in train_accs]} "
+    f"valid: {[str(round(valid_acc, 3)) for valid_acc in valid_accs]} "
+    f"test: {[str(round(test_acc, 3)) for test_acc in test_accs]}"
     f"mean/std train: {np.mean(train_accs), np.std(train_accs)} "
     f"mean/std valid: {np.mean(valid_accs), np.std(valid_accs)} "
     f"mean/std test: {np.mean(test_accs), np.std(test_accs)}"

@@ -8,7 +8,7 @@ from sklearn.linear_model import Ridge
 from acds.benchmarks import get_lorenz
 import joblib
 
-from acds.archetypes import RandomizedOscillatorsNetwork
+from acds.archetypes import RandomizedOscillatorsNetwork, DeepReservoir
 
 
 # =========================================================
@@ -27,16 +27,15 @@ parser.add_argument('--n_hid', type=int, default=6800, help='hidden size of recu
 parser.add_argument("--lag", type=int, default=25, help="prediction lag")
 #   force use cpu
 parser.add_argument("--cpu", action="store_true")
-#   input scaling (max abs value of the input-reservoir connection weights)
-parser.add_argument("--inp_scaling", type=float, default=0.1, help="ESN input scaling")
 #   using test set for evaluating the trained model
 parser.add_argument("--use_test", action="store_true")
 #   number of trials (how many times we want to run the experiment)
 parser.add_argument("--trials", type=int, default=1, help="How many times to run the experiment")
+#   model choice
+parser.add_argument("--esn", action="store_true")
+parser.add_argument("--ron", action="store_true")
 
 # PARAMETERS FOR ALL RONs MODELS:
-#   temporal discretization step (dt)
-parser.add_argument("--dt", type=float, default=0.17, help="step size <dt> of the coRNN")
 #   stiffness (gamma)
 parser.add_argument("--gamma", type=float, default=10.0, help="y controle parameter <gamma> of the coRNN")
 parser.add_argument("--gamma_range", type=float, default=1.0, help="y controle parameter <gamma> of the coRNN")
@@ -44,9 +43,25 @@ parser.add_argument("--gamma_range", type=float, default=1.0, help="y controle p
 parser.add_argument("--epsilon", type=float, default=10.0, help="z controle parameter <epsilon> of the coRNN")
 parser.add_argument("--epsilon_range", type=float, default=0.5, help="z controle parameter <epsilon> of the coRNN")
 
-# OTHER SPECIFIC PARAMETERS
+# PARAMETERS FOR ESN MODEL:
+#   leaky factor
+parser.add_argument("--leaky", type=float, default=0.0001)
+
+# OTHER PARAMETERS
+#   temporal discretization step (dt)
+parser.add_argument("--dt", type=float, default=0.17, help="step size <dt> of the coRNN")
 #   spectral radius (max abs eigenvalue of the recurrent matrix). For ESN and pure RON
 parser.add_argument("--rho", type=float, default=0.99, help="spectral radius")
+#   input scaling (max abs value of the input-reservoir connection weights)
+parser.add_argument("--inp_scaling", type=float, default=0.1, help="ESN input scaling")
+#   topology of the reservoir (and scaling factor for ring/band/toeplitz cases). For pure RON
+parser.add_argument("--topology", 
+                    type=str, 
+                    default="full", 
+                    choices=["full", "ring", "band", "lower", "toeplitz", "orthogonal", "antisymmetric"], 
+                    help="Topology of the reservoir")
+#   sparsity of the connections in the reservoir (0: fully connected; 1: everything unconnected). For ESN and pure RON
+parser.add_argument("--sparsity", type=float, default=0.0, help="Sparsity of the reservoir")
 
 
 args = parser.parse_args()
@@ -94,9 +109,19 @@ def test(dataset, classifier, scaler):
 # =========================================================
 
 # Create folder for saving the trained networks
-netw = 'RON'
+if args.ron:
+    netw = 'RON'
+elif args.esn:
+    netw = 'ESN'
+else:
+    raise ValueError("Wrong model choice.")
+
 suffix = f"_{args.resultsuffix}" if args.resultsuffix else ""
-save_dir = os.path.join(args.resultroot, f'lorenz_{netw}_full{suffix}')
+if args.ron:
+    save_dir = os.path.join(args.resultroot, f'lorenz_{netw}_{args.topology}{suffix}')
+else:
+    save_dir = os.path.join(args.resultroot, f'lorenz_{netw}{suffix}')
+    
 os.makedirs(save_dir, exist_ok=True)  # create folder if not there already
 
 # Iterations
@@ -104,16 +129,29 @@ train_nrmse_list, valid_nrmse_list, test_nrmse_list = [], [], []
 for i in tqdm(range(args.trials), 'Trials', leave=False):
     # Initialize the model
     print('\nInitializing the model...')
-    model = RandomizedOscillatorsNetwork(
-        n_inp=n_inp,
-        n_hid=args.n_hid,
-        dt=args.dt,
-        gamma=gamma,
-        epsilon=epsilon,
-        rho=args.rho,
-        input_scaling=args.inp_scaling,
-        device=device,
-    ).to(device)
+    if args.ron:
+        model = RandomizedOscillatorsNetwork(
+            n_inp = n_inp,
+            n_hid = args.n_hid,
+            dt = args.dt,
+            gamma = gamma,
+            epsilon = epsilon,
+            rho = args.rho,
+            input_scaling = args.inp_scaling,
+            topology = args.topology,
+            device=device,
+        ).to(device)
+    elif args.esn:
+        model = DeepReservoir(
+            input_size=n_inp,
+            tot_units=args.n_hid,
+            input_scaling=args.inp_scaling,
+            spectral_radius=args.rho,
+            leaky=args.leaky,
+            connectivity_recurrent=int((1 - args.sparsity) * args.n_hid),
+            connectivity_input=args.n_hid,
+            dt = args.dt,
+        ).to(device)
 
     # Build datasets
     print('\nBuilding datasets...')
@@ -151,17 +189,28 @@ for i in tqdm(range(args.trials), 'Trials', leave=False):
 
     # Save the trained network
     print('\nSaving trained network...')
-    model_path = os.path.join(save_dir, f"lorenz_{netw}_full{suffix}_model_{i}.pt")
-    torch.save(model.state_dict(), model_path) # save reservoir random parameters (epsilon, gamma, h2h, x2h, bias)
-    scaler_path = os.path.join(save_dir, f"lorenz_{netw}_full{suffix}_scaler_{i}.pkl")
-    joblib.dump(scaler, scaler_path) # save scaler
-    classifier_path = os.path.join(save_dir, f"lorenz_{netw}_full{suffix}_predictor_{i}.pkl")
-    joblib.dump(predictor, classifier_path) # save predictor (output layer)
+    if args.ron:
+        model_path = os.path.join(save_dir, f"lorenz_{netw}_{args.topology}{suffix}_model_{i}.pt")
+        torch.save(model.state_dict(), model_path) # save reservoir random parameters (epsilon, gamma, h2h, x2h, bias)
+        scaler_path = os.path.join(save_dir, f"lorenz_{netw}_{args.topology}{suffix}_scaler_{i}.pkl")
+        joblib.dump(scaler, scaler_path) # save scaler
+        classifier_path = os.path.join(save_dir, f"lorenz_{netw}_{args.topology}{suffix}_classifier_{i}.pkl")
+        joblib.dump(predictor, classifier_path) # save classifier
+    else:
+        model_path = os.path.join(save_dir, f"lorenz_{netw}{suffix}_model_{i}.pt")
+        torch.save(model.state_dict(), model_path) # save reservoir
+        scaler_path = os.path.join(save_dir, f"lorenz_{netw}{suffix}_scaler_{i}.pkl")
+        joblib.dump(scaler, scaler_path) # save scaler
+        classifier_path = os.path.join(save_dir, f"lorenz_{netw}{suffix}_classifier_{i}.pkl")
+        joblib.dump(predictor, classifier_path) # save classifier
     print()
 
 # Save results
 print('Saving results...')
-f = open(os.path.join(save_dir, f"lorenz_log_{netw}_full{suffix}.txt"), "a")
+if args.ron:
+    f = open(os.path.join(save_dir, f"lorenz_log_{netw}_{args.topology}{suffix}.txt"), "a")
+else:
+    f = open(os.path.join(save_dir, f"lorenz_log_{netw}{suffix}.txt"), "a")
 
 ar = ""
 for k, v in vars(args).items():
