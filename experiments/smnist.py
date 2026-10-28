@@ -298,9 +298,9 @@ ar = ""
 for k, v in vars(args).items():
     ar += f"{str(k)}: {str(v)}, "
 ar += (
-    f"train: {[str(round(train_acc, 2)) for train_acc in train_accs]} "
-    f"valid: {[str(round(valid_acc, 2)) for valid_acc in valid_accs]} "
-    f"test: {[str(round(test_acc, 2)) for test_acc in test_accs]}"
+    f"train: {[str(round(train_acc, 3)) for train_acc in train_accs]} "
+    f"valid: {[str(round(valid_acc, 3)) for valid_acc in valid_accs]} "
+    f"test: {[str(round(test_acc, 3)) for test_acc in test_accs]}"
     f"mean/std train: {np.mean(train_accs), np.std(train_accs)} "
     f"mean/std valid: {np.mean(valid_accs), np.std(valid_accs)} "
     f"mean/std test: {np.mean(test_accs), np.std(test_accs)}"
