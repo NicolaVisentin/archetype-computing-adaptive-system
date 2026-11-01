@@ -28,4 +28,5 @@ if __name__ == "__main__":
         n_steps=args.n_steps,
         seed=args.seed,
         overwrite=args.overwrite,
+        save_acceleration_dataset=True,
     )

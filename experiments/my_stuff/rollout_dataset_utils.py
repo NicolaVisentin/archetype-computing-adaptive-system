@@ -21,8 +21,9 @@ def collect_rollout_dataset(
     batch_size: int = 128,
     seed: int = 123,
     overwrite: bool = False,
+    save_acceleration_dataset: bool = False,
 ) -> Path:
-    """Generate RON input/state trajectories and save the rollout dataset."""
+    """Generate RON trajectories and optionally save flat acceleration data."""
     if n_hid < 1 or n_inp < 1:
         raise ValueError("n_hid and n_inp must be positive.")
     if dt <= 0:
@@ -65,11 +66,17 @@ def collect_rollout_dataset(
         / architecture
         / f"trajectories_N{n_hid}.npz"
     )
-    if output_path.exists() and not overwrite:
-        raise FileExistsError(
-            f"Dataset already exists: {output_path}. "
-            "Set overwrite=True in this task script to replace it."
-        )
+    acceleration_dataset_path = output_path.parent / "dataset_y_yd_u_ydd.npz"
+    existing_outputs = [output_path]
+    if save_acceleration_dataset:
+        existing_outputs.append(acceleration_dataset_path)
+    if not overwrite:
+        existing_paths = [path for path in existing_outputs if path.exists()]
+        if existing_paths:
+            raise FileExistsError(
+                f"Dataset already exists: {', '.join(map(str, existing_paths))}. "
+                "Set overwrite=True in this task script to replace it."
+            )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = RandomizedOscillatorsNetwork(
@@ -99,6 +106,7 @@ def collect_rollout_dataset(
     y_data = np.empty((n_trajectories, n_steps, n_hid), dtype=np.float32)
     yd_data = np.empty_like(y_data)
     u_data = np.empty((n_trajectories, n_steps, n_inp), dtype=np.float32)
+    ydd_data = np.empty_like(y_data) if save_acceleration_dataset else None
 
     with torch.no_grad():
         for start in range(0, n_trajectories, batch_size):
@@ -132,18 +140,22 @@ def collect_rollout_dataset(
                 (current_batch_size, n_steps, n_hid), device=device
             )
             yd_batch = torch.empty_like(y_batch)
+            ydd_batch = torch.empty_like(y_batch) if save_acceleration_dataset else None
 
             for step in range(n_steps):
                 y_batch[:, step] = y_state
                 yd_batch[:, step] = yd_state
+                y_next, yd_next = model.cell(u_batch[:, step], y_state, yd_state)
+                if ydd_batch is not None:
+                    ydd_batch[:, step] = (yd_next - yd_state) / dt
                 if step + 1 < n_steps:
-                    y_state, yd_state = model.cell(
-                        u_batch[:, step], y_state, yd_state
-                    )
+                    y_state, yd_state = y_next, yd_next
 
             y_data[start:stop] = y_batch.cpu().numpy()
             yd_data[start:stop] = yd_batch.cpu().numpy()
             u_data[start:stop] = u_batch.cpu().numpy()
+            if ydd_data is not None:
+                ydd_data[start:stop] = ydd_batch.cpu().numpy()
 
             print(f"Generated trajectories {stop}/{n_trajectories}")
 
@@ -164,4 +176,16 @@ def collect_rollout_dataset(
         yd_range=np.asarray(yd_range, dtype=np.float32),
     )
     print(f"Saved {n_trajectories} trajectories to {output_path}")
+    if ydd_data is not None:
+        np.savez_compressed(
+            acceleration_dataset_path,
+            y=y_data.reshape(-1, n_hid),
+            yd=yd_data.reshape(-1, n_hid),
+            ydd=ydd_data.reshape(-1, n_hid),
+            u=u_data.reshape(-1, n_inp),
+        )
+        print(
+            f"Saved {n_trajectories * n_steps} acceleration samples "
+            f"to {acceleration_dataset_path}"
+        )
     return output_path
